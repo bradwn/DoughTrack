@@ -22,10 +22,30 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
-        components = New System.ComponentModel.Container()
+        btnTestConnection = New Button()
+        SuspendLayout()
+        ' 
+        ' btnTestConnection
+        ' 
+        btnTestConnection.AccessibleName = "btnTestConnection"
+        btnTestConnection.Location = New Point(297, 249)
+        btnTestConnection.Name = "btnTestConnection"
+        btnTestConnection.Size = New Size(196, 23)
+        btnTestConnection.TabIndex = 0
+        btnTestConnection.Text = "Test Connection"
+        btnTestConnection.UseVisualStyleBackColor = True
+        ' 
+        ' Form1
+        ' 
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(800, 450)
+        Controls.Add(btnTestConnection)
+        Name = "Form1"
         Text = "Form1"
+        ResumeLayout(False)
     End Sub
+
+    Friend WithEvents btnTestConnection As Button
 
 End Class
