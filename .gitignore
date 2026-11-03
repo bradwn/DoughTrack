@@ -480,6 +480,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-D o u g h T r a c k / a p p s e t t i n g s . j s o n  
- D o u g h T r a c k / a p p s e t t i n g s . j s o n  
- 
+DoughTrack/appsettings.json 
+ 
