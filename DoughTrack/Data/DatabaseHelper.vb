@@ -1,4 +1,4 @@
-﻿Imports System.IO
+﻿Imports System.Data
 Imports Microsoft.Extensions.Configuration
 Imports MySql.Data.MySqlClient
 
@@ -60,6 +60,80 @@ Namespace Data
                 errorMessage = ex.Message
                 Return False
             End Try
+        End Function
+
+        ''' <summary>
+        ''' Runs work inside one transaction. Commits when work finishes.
+        ''' Rolls back and rethrows when work fails.
+        ''' </summary>
+        Public Sub ExecuteInTransaction(work As Action(Of MySqlConnection, MySqlTransaction))
+            Using conn As MySqlConnection = CreateConnection()
+                conn.Open()
+                Using transaction As MySqlTransaction = conn.BeginTransaction()
+                    Try
+                        work(conn, transaction)
+                        transaction.Commit()
+                    Catch
+                        Try
+                            transaction.Rollback()
+                        Catch
+                            ' Keep the original failure from work.
+                        End Try
+                        Throw
+                    End Try
+                End Using
+            End Using
+        End Sub
+
+        ''' <summary>Creates a named parameter. Callers do not concatenate values into SQL.</summary>
+        Public Function Param(name As String, dbType As MySqlDbType, value As Object) As MySqlParameter
+            Return New MySqlParameter(name, dbType) With {.Value = value}
+        End Function
+
+        ''' <summary>Runs a parameterized query and returns the rows.</summary>
+        Public Function FillTable(sql As String, ParamArray parameters() As MySqlParameter) As DataTable
+            Using conn As MySqlConnection = CreateConnection()
+                Using cmd As New MySqlCommand(sql, conn)
+                    If parameters IsNot Nothing AndAlso parameters.Length > 0 Then
+                        cmd.Parameters.AddRange(parameters)
+                    End If
+                    Using adapter As New MySqlDataAdapter(cmd)
+                        Dim table As New DataTable()
+                        adapter.Fill(table)
+                        Return table
+                    End Using
+                End Using
+            End Using
+        End Function
+
+        ''' <summary>Runs a parameterized query that returns one number. Null becomes 0.</summary>
+        Public Function ExecuteScalarDecimal(sql As String, ParamArray parameters() As MySqlParameter) As Decimal
+            Using conn As MySqlConnection = CreateConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand(sql, conn)
+                    If parameters IsNot Nothing AndAlso parameters.Length > 0 Then
+                        cmd.Parameters.AddRange(parameters)
+                    End If
+                    Dim value As Object = cmd.ExecuteScalar()
+                    If value Is Nothing OrElse IsDBNull(value) Then Return 0D
+                    Return Convert.ToDecimal(value)
+                End Using
+            End Using
+        End Function
+
+        ''' <summary>Runs a parameterized query that returns one count. Null becomes 0.</summary>
+        Public Function ExecuteScalarInt(sql As String, ParamArray parameters() As MySqlParameter) As Integer
+            Using conn As MySqlConnection = CreateConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand(sql, conn)
+                    If parameters IsNot Nothing AndAlso parameters.Length > 0 Then
+                        cmd.Parameters.AddRange(parameters)
+                    End If
+                    Dim value As Object = cmd.ExecuteScalar()
+                    If value Is Nothing OrElse IsDBNull(value) Then Return 0
+                    Return Convert.ToInt32(value)
+                End Using
+            End Using
         End Function
 
     End Module

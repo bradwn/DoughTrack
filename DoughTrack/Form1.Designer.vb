@@ -23,6 +23,7 @@ Partial Class Form1
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         btnTestConnection = New Button()
+        btnCreateAdmin = New Button()
         SuspendLayout()
         ' 
         ' btnTestConnection
@@ -35,11 +36,21 @@ Partial Class Form1
         btnTestConnection.Text = "Test Connection"
         btnTestConnection.UseVisualStyleBackColor = True
         ' 
+        ' btnCreateAdmin
+        ' 
+        btnCreateAdmin.Location = New Point(297, 299)
+        btnCreateAdmin.Name = "btnCreateAdmin"
+        btnCreateAdmin.Size = New Size(196, 28)
+        btnCreateAdmin.TabIndex = 1
+        btnCreateAdmin.Text = "Create Admin"
+        btnCreateAdmin.UseVisualStyleBackColor = True
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(800, 450)
+        Controls.Add(btnCreateAdmin)
         Controls.Add(btnTestConnection)
         Name = "Form1"
         Text = "Form1"
@@ -47,5 +58,6 @@ Partial Class Form1
     End Sub
 
     Friend WithEvents btnTestConnection As Button
+    Friend WithEvents btnCreateAdmin As Button
 
 End Class
