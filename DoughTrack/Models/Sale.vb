@@ -8,6 +8,11 @@ Namespace Models
         Public Property SaleDateTime As DateTime
         Public Property TotalAmount As Decimal
         Public Property UserId As Integer
+
+        ''' <summary>Line summary built from the quantities and names saved on the sale.</summary>
+        Public Property ItemSummary As String
+
+        Public Property Lines As New List(Of SaleItem)
     End Class
 
 End Namespace

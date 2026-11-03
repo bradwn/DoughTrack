@@ -90,6 +90,25 @@ Namespace Data
             Return New MySqlParameter(name, dbType) With {.Value = value}
         End Function
 
+        ''' <summary>True when the connected database already has this column.</summary>
+        Public Function ColumnExists(tableName As String, columnName As String) As Boolean
+            Const sql As String =
+                "SELECT COUNT(*) FROM information_schema.COLUMNS " &
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @tableName AND COLUMN_NAME = @columnName"
+            Return ExecuteScalarInt(sql,
+                Param("@tableName", MySqlDbType.VarChar, tableName),
+                Param("@columnName", MySqlDbType.VarChar, columnName)) = 1
+        End Function
+
+        ''' <summary>Decimal parameter with an explicit scale so MySQL does not truncate it.</summary>
+        Public Function DecimalParam(name As String, value As Decimal, scale As Byte) As MySqlParameter
+            Return New MySqlParameter(name, MySqlDbType.Decimal) With {
+                .Precision = 18,
+                .Scale = scale,
+                .Value = value
+            }
+        End Function
+
         ''' <summary>Runs a parameterized query and returns the rows.</summary>
         Public Function FillTable(sql As String, ParamArray parameters() As MySqlParameter) As DataTable
             Using conn As MySqlConnection = CreateConnection()

@@ -1,47 +1,47 @@
 # DoughTrack progress
 
-Updated 2026-11-04 after the development-prep pass.
+Updated 2026-11-04 after Sales History.
 
-## Checked
+## Already on origin/main
 
-- `AI_HANDOFF.md` from the earlier inspection.
-- `PROJECT_REQUIREMENTS.md`: not found in the repo or under the user profile.
-- `DATABASE_STRUCTURE.md`: did not exist. It was created from the live schema.
-- VB.NET project: .NET 10 Windows Forms, startup form `frmLogin`, connection in `DatabaseHelper`.
-- Live MySQL 9.6. Application port is 3306. Port 33060 is X Protocol and is not the app port.
-- `Darwin`@`localhost` has SELECT, INSERT, UPDATE, DELETE on `doughtrack_db` only.
-- `doughtrack_db` still has the nine original tables. The earlier count was 1 user and 0 rows in every other table. This pass did not write to that database.
-- Login code: blank-field check, one message for unknown user and bad password, PBKDF2 verify, parameterized lookup, startup form still `frmLogin`. No functional defect found in review. The form layout was not changed. The success path still shows the welcome message because there is no main form yet.
-- The login screen was not opened or clicked in this session.
+Commit `50718a3` is on `main` and matches `origin/main`. The earlier push is done. Login, the main shell, menu items, and recipe editing are in that commit.
 
-## Changed
+## This pass
 
-- `Database/Migrations/001_create_doughtrack_dev.sql`: safe script for a separate dev database. Not executed. `doughtrack_dev` does not exist yet.
-- `DatabaseHelper.ExecuteInTransaction`: commit on success, rollback and rethrow on failure. Existing connection methods are unchanged.
-- Model classes for menu, inventory, recipe lines, sales, stock-in, and expenses.
-- Empty repository modules for those same areas. `UserRepository` is unchanged.
-- Removed an unused import in `Session.vb`. Session behavior is unchanged.
-- `appsettings.example.json` password is now `your-password`. Live `appsettings.json` still points at `doughtrack_db` on port 3306.
-- `DATABASE_STRUCTURE.md`, this file, and `AI_HANDOFF.md`.
+Sales History reads completed sales from MySQL. It is not a Reports module, and it does not add a table.
 
-## Unchanged on purpose
+- The grid columns are Sale ID, Date and Time, Items, Total Amount, and View Details.
+- Search matches the sale id, the date, and the item name saved on the sale.
+- From and To date filters are optional. A checked end date includes that whole day.
+- Category filters sales that contain a menu item currently in that category. The sale does not store a category, so this list can follow a later menu edit. Names and prices on the sale do not.
+- View Details shows the transaction id, date and time, each saved item, quantity, unit price, line subtotal, and the sale total.
+- Item names come from `sale_items.menu_item_name` when that column exists. Unit price and subtotal always come from `sale_items`. The screen does not display the menu item's current name or selling price. A missing name is shown as `Item` plus the menu item id.
 
-- Target framework `net10.0-windows`.
-- `frmLogin` layout and login flow.
-- `Form1` connection-test and temporary Create Admin button.
-- `doughtrack_db` tables and rows.
-- No Suppliers, Reports, Staff, or Customer modules.
+`dotnet build DoughTrack.slnx` succeeded with 0 warnings and 0 errors. The history query ran on `doughtrack_db` and returned no rows. `sales` and `sale_items` are still empty. The screen was not opened.
 
-## Ready next
+## Still in the working tree
 
-1. Run `Database/Migrations/001_create_doughtrack_dev.sql` in MySQL Workbench as an administrator, then set `Database:Name` in `appsettings.json` to `doughtrack_dev`.
-2. Build the main form and open it from a successful login.
+Sales is a point-of-sale screen: menu cards on the left, the current order on the right.
 
-Screen order after that: Menu, Inventory, Recipes, Stock-in, Sales, Expenses. Sales and stock-in need `ExecuteInTransaction` so inventory quantity changes with the document.
+- Search and category filter list active menu items with image, name, category, and price.
+- Availability is how many servings the recipe can make from current inventory. No recipe, a unit that cannot be converted, or not enough stock means Unavailable, and Add is disabled.
+- The order can add, increase, decrease, remove, and clear lines. The total is the sum of line subtotals.
+- Complete Sale checks that the order is not empty, every item is still Active, the price has not changed, and every recipe component has enough stock.
+- One transaction locks the menu rows, recipe rows, and inventory rows, inserts `sales` and `sale_items`, stores the item name, selling price, and COGS, then deducts inventory. A failure rolls the whole sale back. The deduction uses `quantity >= needed`, so stock cannot go negative.
+- Selling two of an item deducts twice the recipe quantity. Shared ingredients across lines are added together before the deduction.
+- There is no payment, cash, change, or card handling.
 
-## Verified this session
+## Blocked
 
-- MySQL accepted `Darwin` on `127.0.0.1:3306` and reported `@@port` 3306, version 9.6.0.
-- `SHOW GRANTS` shows DML on `doughtrack_db` only.
-- `CREATE DATABASE` was not possible with this login. `root` with no password was denied.
-- `dotnet build DoughTrack.slnx` succeeded with 0 warnings and 0 errors. The login screen was not run.
+`Darwin` still cannot `ALTER` tables. `Database/Migrations/002_sale_cogs_snapshot.sql` was not applied. Until an administrator runs it on `doughtrack_db`, Complete Sale stops with that instruction and does not write a partial sale. The script adds `sales.cogs_amount`, `sale_items.menu_item_name`, and `sale_items.cogs_amount`. It does not drop tables or delete rows.
+
+Until that script runs, Sales History can still list a sale and its saved prices, but the item label is `Item` plus the menu item id.
+
+Dashboard profit uses the saved COGS after that column exists. Before the script, it still estimates from the current unit cost. Fast-moving items on the dashboard still use the current menu name.
+
+`doughtrack_dev` is still not created. The app uses `doughtrack_db`.
+
+## Next
+
+1. Run `002_sale_cogs_snapshot.sql` in MySQL Workbench as an administrator.
+2. Inventory and stock-in, so the register has ingredients to sell.

@@ -27,7 +27,7 @@ Public Class frmMenuItemEdit
         MinimizeBox = False
         MaximizeBox = False
         FormBorderStyle = FormBorderStyle.FixedDialog
-        ClientSize = New Size(860, 680)
+        ClientSize = New Size(900, 760)
         BackColor = UiTheme.Content
 
         Dim card As New Panel With {
@@ -50,7 +50,11 @@ Public Class frmMenuItemEdit
         Next
 
         _name = New TextBox With {.MaxLength = 100, .Dock = DockStyle.Fill}
-        _category = New ComboBox With {.Dock = DockStyle.Fill, .DropDownStyle = ComboBoxStyle.DropDown}
+        _category = New ComboBox With {
+            .Dock = DockStyle.Fill,
+            .DropDownStyle = ComboBoxStyle.DropDown,
+            .MaxLength = 50
+        }
         _price = New NumericUpDown With {
             .DecimalPlaces = 2,
             .Minimum = 0D,
@@ -110,7 +114,7 @@ Public Class frmMenuItemEdit
             .Dock = DockStyle.Top,
             .Height = 28,
             .Font = New Font(Font, FontStyle.Bold),
-            .Text = "Recipe — ingredients and supplies"
+            .Text = "Recipe — one serving can use several ingredients and supplies"
         }
         _recipe = New RecipeEditor()
         _message = New Label With {
@@ -137,6 +141,7 @@ Public Class frmMenuItemEdit
         card.Controls.SetChildIndex(_recipe, 0)
         Controls.Add(card)
 
+        AcceptButton = saveButton
         CancelButton = cancelButton
         AddHandler browse.Click, AddressOf ChooseImage
         AddHandler clearImage.Click, AddressOf ClearChosenImage
@@ -147,23 +152,26 @@ Public Class frmMenuItemEdit
     End Sub
 
     Private Sub LoadFields()
-        For Each category As String In MenuItemRepository.GetCategories()
-            _category.Items.Add(category)
-        Next
-        _name.Text = _item.MenuItemName
-        _category.Text = _item.Category
+        Try
+            For Each category As String In MenuItemRepository.GetCategories()
+                _category.Items.Add(category)
+            Next
+            Dim lines As New List(Of RecipeLine)
+            If _item.MenuItemId > 0 Then
+                lines = MenuItemIngredientRepository.GetLines(_item.MenuItemId)
+            End If
+            _recipe.Configure(_item.MenuItemId, False, lines)
+        Catch ex As Exception
+            _message.Text = ex.Message
+        End Try
+        _name.Text = If(_item.MenuItemName, "")
+        _category.Text = If(_item.Category, "")
         If _item.SellingPrice >= 0D AndAlso _item.SellingPrice <= _price.Maximum Then
             _price.Value = _item.SellingPrice
         End If
         _status.SelectedItem = If(_item.Status = "Inactive", "Inactive", "Active")
         _imagePath = If(_item.ImagePath, "")
         ShowImage()
-
-        Dim lines As New List(Of RecipeLine)
-        If _item.MenuItemId > 0 Then
-            lines = MenuItemIngredientRepository.GetLines(_item.MenuItemId)
-        End If
-        _recipe.Configure(_item.MenuItemId, False, lines)
     End Sub
 
     Private Sub ChooseImage(sender As Object, e As EventArgs)
@@ -196,12 +204,16 @@ Public Class frmMenuItemEdit
         End If
         _imagePathLabel.Text = _imagePath
         Dim fullPath As String = MenuImageStore.Resolve(_imagePath)
-        If Not IO.File.Exists(fullPath) Then Return
-        Using stream As New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-            Using source As Image = Image.FromStream(stream)
-                _preview.Image = New Bitmap(source)
+        If fullPath = "" OrElse Not IO.File.Exists(fullPath) Then Return
+        Try
+            Using stream As New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                Using source As Image = Image.FromStream(stream)
+                    _preview.Image = New Bitmap(source)
+                End Using
             End Using
-        End Using
+        Catch
+            _message.Text = "That image file could not be shown."
+        End Try
     End Sub
 
     Private Sub SaveItem(sender As Object, e As EventArgs)
@@ -209,6 +221,10 @@ Public Class frmMenuItemEdit
         _item.MenuItemName = _name.Text.Trim()
         _item.Category = _category.Text.Trim()
         _item.SellingPrice = _price.Value
+        If _status.SelectedItem Is Nothing Then
+            _message.Text = "Choose Active or Inactive."
+            Return
+        End If
         _item.Status = CStr(_status.SelectedItem)
         _item.ImagePath = _imagePath
         Try

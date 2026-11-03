@@ -19,8 +19,8 @@ Namespace Helpers
                 password, salt, DefaultIterations, HashAlgorithmName.SHA256, HashSize)
 
             Return DefaultIterations.ToString() & "." &
-                   Convert.ToBase64String(salt) & "." &
-                   Convert.ToBase64String(hash)
+                   System.Convert.ToBase64String(salt) & "." &
+                   System.Convert.ToBase64String(hash)
         End Function
 
         ''' <summary>
@@ -33,8 +33,8 @@ Namespace Helpers
                 If parts.Length <> 3 Then Return False
 
                 Dim storedIterations As Integer = Integer.Parse(parts(0))
-                Dim salt As Byte() = Convert.FromBase64String(parts(1))
-                Dim expectedHash As Byte() = Convert.FromBase64String(parts(2))
+                Dim salt As Byte() = System.Convert.FromBase64String(parts(1))
+                Dim expectedHash As Byte() = System.Convert.FromBase64String(parts(2))
 
                 Dim actualHash As Byte() = Rfc2898DeriveBytes.Pbkdf2(
                     password, salt, storedIterations, HashAlgorithmName.SHA256, expectedHash.Length)

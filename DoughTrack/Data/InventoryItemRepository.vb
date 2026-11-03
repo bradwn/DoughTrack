@@ -41,7 +41,7 @@ Namespace Data
             Const sql As String =
                 "SELECT inventory_item_id, item_name, category, quantity, unit, " &
                 "reorder_point, unit_cost, status " &
-                "FROM inventory_items ORDER BY item_name"
+                "FROM inventory_items ORDER BY status, item_name"
             Dim items As New List(Of InventoryItem)
             Using conn As MySqlConnection = CreateConnection()
                 conn.Open()

@@ -1,105 +1,67 @@
 # DoughTrack AI Handoff
 
-Updated 2026-11-04 after development prep. Read `DATABASE_STRUCTURE.md` and `PROGRESS.md` with this file.
+Updated 2026-11-04 after Sales History. Read `DESIGN_REFERENCE.md`, `DATABASE_STRUCTURE.md`, and `PROGRESS.md` with this file.
 
-`PROJECT_REQUIREMENTS.md` was not found. The visual spec is `DESIGN_REFERENCE.md` and `Design/references/`. Follow it for every screen, not only the Dashboard. Do not invent Suppliers, Staff, or Customers. Dashboard, Sales History, Low Stock, and Settings are part of the Figma set. There is one account type, Admin, and `users` has no role column.
-
-## Project
-
-- DoughTrack for Doughtown Cafe. VB.NET Windows Forms. Not a web, mobile, cloud, or API app.
-- Solution: `DoughTrack.slnx`, branch `master`.
-- Project: `DoughTrack/DoughTrack.vbproj`.
-- Framework: .NET 10 (`net10.0-windows`). Do not change it unless a later task cannot be done on this target.
-- Startup object: `DoughTrack.My.MyApplication`.
-- Startup form: `frmLogin`. `Form1` is a leftover connection test and temporary Create Admin button. It is not the startup form.
-- Packages: `MySql.Data` 26.10.0, `Microsoft.Extensions.Configuration.Json` 10.0.14.
-
-## Layout
-
-```
-DoughTrack.slnx
-AI_HANDOFF.md
-DATABASE_STRUCTURE.md
-PROGRESS.md
-Database/Migrations/001_create_doughtrack_dev.sql
-DoughTrack/
-  DoughTrack.vbproj
-  ApplicationEvents.vb
-  Form1.vb / Form1.Designer.vb / Form1.resx
-  appsettings.json                 gitignored; still uses doughtrack_db
-  appsettings.example.json         placeholder password
-  Data/
-    DatabaseHelper.vb              connection, TestConnection, ExecuteInTransaction
-    UserRepository.vb              working user SQL
-    MenuItemRepository.vb          shell
-    InventoryItemRepository.vb     shell
-    MenuItemIngredientRepository.vb shell
-    SaleRepository.vb              shell for sales and sale_items
-    StockInRepository.vb           shell for stock_ins and stock_in_items
-    ExpenseRepository.vb           shell
-  Forms/frmLogin.*                 working login; do not redesign it
-  Helpers/PasswordHelper.vb
-  Helpers/Session.vb
-  Models/                          User plus one class per remaining table
-  My Project/Application.myapp     MainForm = frmLogin
-  Services/                        empty
-  Resources/                       empty
-```
-
-New SQL belongs in the matching repository. Multi-table saves use `DatabaseHelper.ExecuteInTransaction`. Use parameters. Do not store plain passwords.
+Branch `main` tracks `origin/main`. Framework remains .NET 10 Windows Forms. Startup form is `frmLogin`. Do not add Suppliers, Staff, Customers, Reports, or a payment flow. There is one admin account.
 
 ## Database
 
-- MySQL 9.6.0, localhost, port **3306**. Do not use 33060.
-- Original database: `doughtrack_db`. Do not drop, recreate, reset, or delete its data.
-- App user: `Darwin`@`localhost`, DML only on `doughtrack_db`.
-- Password: `appsettings.json` only.
-- `doughtrack_dev` is the intended test database. It was not created here because this login cannot `CREATE DATABASE`, and `root` without a password was denied.
-- Before writing feature data, run `Database/Migrations/001_create_doughtrack_dev.sql` in Workbench as an administrator, then change `Database:Name` to `doughtrack_dev`. Until that happens, keep the app on `doughtrack_db`.
-- Schema, keys, checks, and the decision that no columns are missing: `DATABASE_STRUCTURE.md`.
-- Do not import the OneDrive dumps. They contain `DROP TABLE`.
+- MySQL 9.6, localhost, port 3306, database `doughtrack_db`.
+- User `Darwin` can SELECT, INSERT, UPDATE, and DELETE. It cannot CREATE or ALTER.
+- Do not drop, recreate, or delete existing rows.
+- `Database/Migrations/001_create_doughtrack_dev.sql` has not been run.
+- `Database/Migrations/002_sale_cogs_snapshot.sql` has not been run. Sales completion still requires it. On 2026-11-04, `sales` and `sale_items` were empty, and `sales.cogs_amount`, `sale_items.menu_item_name`, and `sale_items.cogs_amount` were still absent.
 
-`users` has one admin row. Every other table was empty at inspection. This prep pass did not write to MySQL.
+Original sale columns remain. The script adds:
 
-## Login
+| Table | Column | Purpose |
+| --- | --- | --- |
+| sales | cogs_amount decimal(12,2) | Cost snapshot for the whole sale |
+| sale_items | menu_item_name varchar(100) | Name at the time of sale |
+| sale_items | cogs_amount decimal(12,2) | Cost snapshot for the line |
 
-Reviewed, not redesigned, and not clicked in this session.
+`unit_price` and `subtotal` already store the selling price. Recipe quantity is not copied onto the sale line. The cost uses `unit_cost` at sale time. No new table was added for history.
 
-- Blank username or password: "Please enter your username and password."
-- Unknown user and wrong password share "Incorrect username or password."
-- Password characters are masked. Enter submits. Exit calls `Application.Exit()`.
-- Success sets `Session.CurrentUser` and shows "Welcome, {FullName}."
-- Database errors show "Unable to log in. Please check the database connection." and write the exception with `Debug.WriteLine`.
-- Lookup SQL is parameterized. Passwords use PBKDF2 in `PasswordHelper`.
+## Sales behavior
 
-The next UI task is a main form opened from that success path. Leave the login controls where they are.
+`Forms/SalesView.vb` is the Sales screen. The order stays in memory until Complete Sale.
 
-## Completed
+`SaleRepository.CompleteSale` does all writes through `DatabaseHelper.ExecuteInTransaction`:
 
-- Connection helper and live login against `doughtrack_db`.
-- User model, user repository, password hashing, session.
-- Schema for menu, inventory, recipes, sales, stock-in, and expenses.
-- Model classes and repository shells for those modules.
-- Transaction helper ready for sales and stock-in.
+1. Reject an empty order.
+2. Lock each active menu row and reject a price change.
+3. Lock recipe rows. An item with no recipe cannot be sold.
+4. Lock inventory rows in id order.
+5. Convert recipe units onto the inventory unit with `UnitConverter.ConvertQuantity`. Identical unknown units are compared as written. kg/g, L/ml, and pc/pcs convert. A mismatch fails the sale.
+6. Deduct with `UPDATE ... SET quantity = quantity - @needed WHERE quantity >= @needed`.
+7. Insert the sale and lines, including name, price, subtotal, and COGS.
+8. Any exception rolls back every change in that transaction.
 
-## Still to build
+Inactive menu items are omitted from the register and rejected if they are no longer active when the sale is saved. Past sales keep the saved name and price.
 
-1. Run the dev-database script and point `appsettings.json` at `doughtrack_dev`.
-2. Main form after login, with logout through `Session.Logout()`.
-3. Menu.
-4. Inventory.
-5. Recipes (`menu_item_ingredients`).
-6. Stock-in, including quantity and cost updates in one transaction.
-7. Sales, including recipe deduction in one transaction, refused when quantity would go below 0.
-8. Expenses.
+Two servings deduct twice each recipe component. Components shared by different lines are summed first.
 
-`Form1` Create Admin is temporary. The admin row already exists. Do not add another account type.
+## Sales History
 
-## Rules
+`Forms/SalesHistoryView.vb` replaces the old read-only grid. `frmSaleDetails` opens from View Details or a double-click on the row.
 
-- Keep this project.
-- Keep `frmLogin` working.
-- Keep `doughtrack_db`.
-- Parameterized SQL only.
-- No web, mobile, cloud, API, or online services.
-- No Suppliers, Reports, Staff, or Customer modules.
+`SaleRepository.SearchHistory` reads `sales` and `sale_items`. The grid shows sale id, date and time, an item summary, total amount, and View Details.
+
+- Search matches the sale id, the date text, and the saved item name.
+- From and To use `sale_date_time`. Each date box stays unchecked until the user checks it. The end date includes that whole day.
+- Category lists the current `menu_items.category` of items that appear on a sale. Sale lines do not store a category, so this filter follows a later category edit. It does not change the stored name or price. A sale matches when any of its lines is in the selected category.
+
+`SaleRepository.GetSale` loads one sale for the details window. The detail grid uses `sale_items.quantity`, `unit_price`, and `subtotal`. The item name is `sale_items.menu_item_name` when that column exists and is not blank. History does not read `menu_items.menu_item_name` or `menu_items.selling_price`. If the name snapshot is missing or blank, the line is labeled `Item` plus the menu item id.
+
+The history query was run against `doughtrack_db`. It returned no rows because no sales are saved yet. The screen was not opened.
+
+## Also in the working tree
+
+- Menu list, add, edit, details, and recipe editing.
+- Sales completion from the previous pass, still blocked until the COGS migration is applied.
+- `UnitConverter` and `StockInDraftLine` are present for stock-in. `UnitConverter.Convert` was renamed to `ConvertQuantity` so it does not hide `System.Convert` inside the Helpers namespace.
+- `PasswordHelper` now calls `System.Convert` for Base64.
+
+## Next
+
+Run the COGS migration as an administrator, then build inventory and stock-in so recipes have stock to sell. After a sale is saved, Sales History can show its snapshot name. Until then, a sale line would show `Item` and the menu item id, with the saved unit price and subtotal.

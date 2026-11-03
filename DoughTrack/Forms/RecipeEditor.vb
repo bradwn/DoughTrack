@@ -11,8 +11,9 @@ Public Class RecipeEditor
 
     Private ReadOnly _inventory As ComboBox
     Private ReadOnly _quantity As NumericUpDown
-    Private ReadOnly _unitLabel As Label
+    Private ReadOnly _unit As ComboBox
     Private ReadOnly _message As Label
+    Private ReadOnly _summary As Label
     Private ReadOnly _grid As DataGridView
     Private ReadOnly _addButton As Button
     Private ReadOnly _updateButton As Button
@@ -26,9 +27,9 @@ Public Class RecipeEditor
 
         Dim tools As New FlowLayoutPanel With {
             .Dock = DockStyle.Top,
-            .Height = 44,
+            .Height = 84,
             .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False,
+            .WrapContents = True,
             .Padding = New Padding(0, 4, 0, 4)
         }
         _inventory = New ComboBox With {
@@ -44,18 +45,16 @@ Public Class RecipeEditor
             .Width = 90,
             .ThousandsSeparator = True
         }
-        _unitLabel = New Label With {
-            .AutoSize = True,
-            .Padding = New Padding(0, 8, 8, 0),
-            .ForeColor = UiTheme.TextMuted,
-            .Text = ""
+        _unit = New ComboBox With {
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .Width = 72
         }
         _addButton = UiTheme.MakeButton("Add to recipe")
         _updateButton = UiTheme.MakeButton("Update quantity")
         _removeButton = UiTheme.MakeButton("Remove")
         tools.Controls.Add(_inventory)
         tools.Controls.Add(_quantity)
-        tools.Controls.Add(_unitLabel)
+        tools.Controls.Add(_unit)
         tools.Controls.Add(_addButton)
         tools.Controls.Add(_updateButton)
         tools.Controls.Add(_removeButton)
@@ -65,6 +64,14 @@ Public Class RecipeEditor
             .Height = 22,
             .ForeColor = UiTheme.Danger,
             .TextAlign = ContentAlignment.MiddleLeft
+        }
+        _summary = New Label With {
+            .Dock = DockStyle.Top,
+            .Height = 40,
+            .ForeColor = UiTheme.TextMuted,
+            .TextAlign = ContentAlignment.MiddleLeft,
+            .AutoEllipsis = True,
+            .Text = "No ingredients yet. A menu item can use several ingredients and supplies."
         }
 
         _grid = New DataGridView With {.Dock = DockStyle.Fill}
@@ -81,6 +88,7 @@ Public Class RecipeEditor
 
         Controls.Add(tools)
         Controls.Add(_message)
+        Controls.Add(_summary)
         Controls.Add(_grid)
         Controls.SetChildIndex(_grid, 0)
 
@@ -120,6 +128,7 @@ Public Class RecipeEditor
         Dim hasItems As Boolean = _inventory.Items.Count > 0
         _addButton.Enabled = hasItems
         _inventory.Enabled = hasItems
+        _unit.Enabled = hasItems
         If hasItems Then
             _inventory.SelectedIndex = 0
         Else
@@ -135,6 +144,7 @@ Public Class RecipeEditor
             _grid.Rows(rowIndex).Tag = CloneLine(line)
         Next
         If _grid.Rows.Count > 0 Then _grid.Rows(0).Selected = True
+        UpdateSummary()
     End Sub
 
     Private Sub AddLine(sender As Object, e As EventArgs)
@@ -149,13 +159,19 @@ Public Class RecipeEditor
             Return
         End If
 
+        Dim unit As String = SelectedUnit()
+        If unit = "" Then
+            ShowError("Select a unit for this ingredient.")
+            Return
+        End If
+
         Dim line As New RecipeLine With {
             .MenuItemId = _menuItemId,
             .InventoryItemId = pick.Item.InventoryItemId,
             .ItemName = pick.Item.ItemName,
             .InventoryCategory = pick.Item.Category,
             .QuantityRequired = _quantity.Value,
-            .Unit = pick.Item.Unit
+            .Unit = unit
         }
 
         Try
@@ -164,12 +180,13 @@ Public Class RecipeEditor
                     ShowError("Save the menu item before adding a recipe.")
                     Return
                 End If
-                MenuItemIngredientRepository.AddLine(_menuItemId, line.InventoryItemId, line.QuantityRequired)
+                MenuItemIngredientRepository.AddLine(_menuItemId, line.InventoryItemId, line.QuantityRequired, line.Unit)
                 ShowLines(MenuItemIngredientRepository.GetLines(_menuItemId))
             Else
                 Dim rowIndex As Integer = _grid.Rows.Add(line.ItemName, line.InventoryCategory, line.QuantityRequired, line.Unit)
                 _grid.Rows(rowIndex).Tag = line
                 _grid.Rows(rowIndex).Selected = True
+                UpdateSummary()
             End If
         Catch ex As Exception
             ShowError(ex.Message)
@@ -192,6 +209,7 @@ Public Class RecipeEditor
                 line.QuantityRequired = _quantity.Value
                 Dim row As DataGridViewRow = _grid.SelectedRows(0)
                 row.Cells("Quantity").Value = line.QuantityRequired
+                UpdateSummary()
             End If
         Catch ex As Exception
             ShowError(ex.Message)
@@ -216,6 +234,7 @@ Public Class RecipeEditor
                 ShowLines(MenuItemIngredientRepository.GetLines(_menuItemId))
             Else
                 _grid.Rows.Remove(_grid.SelectedRows(0))
+                UpdateSummary()
             End If
         Catch ex As Exception
             ShowError(ex.Message)
@@ -224,7 +243,38 @@ Public Class RecipeEditor
 
     Private Sub InventoryChanged(sender As Object, e As EventArgs)
         Dim pick As InventoryPick = TryCast(_inventory.SelectedItem, InventoryPick)
-        _unitLabel.Text = If(pick Is Nothing, "", pick.Item.Unit)
+        _unit.Items.Clear()
+        If pick Is Nothing Then Return
+        For Each choice As String In UnitConverter.UnitChoices(pick.Item.Unit)
+            _unit.Items.Add(choice)
+        Next
+        If _unit.Items.Count = 0 Then Return
+        Dim preferred As String = ""
+        Try
+            preferred = UnitConverter.MatchUnit(pick.Item.Unit, pick.Item.Unit)
+        Catch
+            preferred = CStr(_unit.Items(0))
+        End Try
+        Dim index As Integer = _unit.FindStringExact(preferred)
+        _unit.SelectedIndex = If(index >= 0, index, 0)
+    End Sub
+
+    Private Function SelectedUnit() As String
+        If _unit.SelectedItem Is Nothing Then Return ""
+        Return CStr(_unit.SelectedItem)
+    End Function
+
+    Private Sub UpdateSummary()
+        Dim lines As List(Of RecipeLine) = CurrentLines()
+        If lines.Count = 0 Then
+            _summary.Text = "No ingredients yet. A menu item can use several ingredients and supplies."
+            Return
+        End If
+        Dim parts As New List(Of String)
+        For Each line As RecipeLine In lines
+            parts.Add(line.ItemName & " " & line.QuantityRequired.ToString("0.###") & " " & line.Unit)
+        Next
+        _summary.Text = String.Join("   ·   ", parts)
     End Sub
 
     Private Sub GridSelectionChanged(sender As Object, e As EventArgs)

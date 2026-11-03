@@ -1,4 +1,5 @@
 Imports MySql.Data.MySqlClient
+Imports DoughTrack.Helpers
 Imports DoughTrack.Models
 
 Namespace Data
@@ -154,7 +155,7 @@ Namespace Data
         Private Sub AddItemParameters(cmd As MySqlCommand, item As MenuItem)
             cmd.Parameters.Add(Param("@name", MySqlDbType.VarChar, item.MenuItemName))
             cmd.Parameters.Add(Param("@category", MySqlDbType.VarChar, item.Category))
-            cmd.Parameters.Add(Param("@price", MySqlDbType.Decimal, item.SellingPrice))
+            cmd.Parameters.Add(DecimalParam("@price", item.SellingPrice, 2))
             Dim imageValue As Object = DBNull.Value
             If Not String.IsNullOrWhiteSpace(item.ImagePath) Then imageValue = item.ImagePath
             cmd.Parameters.Add(Param("@image", MySqlDbType.VarChar, imageValue))
@@ -181,8 +182,9 @@ Namespace Data
             If item.MenuItemName.Length > 100 Then Throw New InvalidOperationException("Name must be 100 characters or less.")
             If item.Category = "" Then Throw New InvalidOperationException("Enter a category.")
             If item.Category.Length > 50 Then Throw New InvalidOperationException("Category must be 50 characters or less.")
+            item.SellingPrice = UnitConverter.RoundMoney(item.SellingPrice)
             If item.SellingPrice < 0D OrElse item.SellingPrice > 99999999.99D Then
-                Throw New InvalidOperationException("Selling price must be zero or greater.")
+                Throw New InvalidOperationException("Selling price must be zero or greater, with at most two decimal places.")
             End If
             If item.ImagePath IsNot Nothing AndAlso item.ImagePath.Length > 255 Then
                 Throw New InvalidOperationException("The image path is too long.")

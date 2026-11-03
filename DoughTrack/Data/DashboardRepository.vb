@@ -25,9 +25,9 @@ Namespace Data
         End Function
 
         ''' <summary>
-        ''' Today's sales revenue minus estimated cost of goods sold.
-        ''' Cost is sale quantity × recipe quantity × the inventory item's current unit cost.
-        ''' Items without a recipe contribute no cost.
+        ''' Today's sales revenue minus cost of goods sold.
+        ''' Uses the COGS saved with each sale when that column exists.
+        ''' Otherwise it estimates from the current inventory unit cost.
         ''' </summary>
         Public Function GetTodaysGrossProfit(day As Date) As (Profit As Decimal, Revenue As Decimal, Cost As Decimal)
             Const costSql As String =
@@ -39,7 +39,8 @@ Namespace Data
                 "WHERE s.sale_date_time >= @start AND s.sale_date_time < @end"
 
             Dim revenue As Decimal = GetTodaysSales(day).Total
-            Dim cost As Decimal = ExecuteScalarDecimal(costSql, DayParameters(day))
+            Dim storedCost As Decimal = SaleRepository.TodaysCogs(day)
+            Dim cost As Decimal = If(storedCost >= 0D, storedCost, ExecuteScalarDecimal(costSql, DayParameters(day)))
             Return (revenue - cost, revenue, cost)
         End Function
 

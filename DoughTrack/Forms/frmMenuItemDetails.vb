@@ -22,7 +22,7 @@ Public Class frmMenuItemDetails
         MinimizeBox = False
         MaximizeBox = False
         FormBorderStyle = FormBorderStyle.FixedDialog
-        ClientSize = New Size(860, 640)
+        ClientSize = New Size(860, 720)
         BackColor = UiTheme.Content
 
         Dim card As New Panel With {
@@ -77,18 +77,27 @@ Public Class frmMenuItemDetails
     End Sub
 
     Private Sub LoadItem()
-        Dim current As MenuItem = MenuItemRepository.GetById(_item.MenuItemId)
-        If current Is Nothing Then
-            _summary.Text = "This menu item no longer exists."
+        Dim current As MenuItem
+        Dim lines As List(Of RecipeLine)
+        Dim sold As Integer
+        Try
+            current = MenuItemRepository.GetById(_item.MenuItemId)
+            If current Is Nothing Then
+                _summary.Text = "This menu item no longer exists."
+                Return
+            End If
+            lines = MenuItemIngredientRepository.GetLines(_item.MenuItemId)
+            sold = MenuItemRepository.CountSoldInLast30Days(_item.MenuItemId)
+        Catch ex As Exception
+            _summary.Text = ex.Message
             Return
-        End If
+        End Try
         _item.MenuItemName = current.MenuItemName
         _item.Category = current.Category
         _item.SellingPrice = current.SellingPrice
         _item.ImagePath = current.ImagePath
         _item.Status = current.Status
 
-        Dim sold As Integer = MenuItemRepository.CountSoldInLast30Days(_item.MenuItemId)
         Dim saleRule As String = If(_item.Status = "Active",
             "This item can be sold.",
             "Inactive items stay on past sales and cannot be sold.")
@@ -99,7 +108,7 @@ Public Class frmMenuItemDetails
             "Sold in the last 30 days: " & sold.ToString() & vbCrLf &
             saleRule
         ShowImage()
-        _recipe.Configure(_item.MenuItemId, True, MenuItemIngredientRepository.GetLines(_item.MenuItemId))
+        _recipe.Configure(_item.MenuItemId, True, lines)
     End Sub
 
     Private Sub EditItem(sender As Object, e As EventArgs)
@@ -114,11 +123,15 @@ Public Class frmMenuItemDetails
         If previous IsNot Nothing Then previous.Dispose()
         Dim fullPath As String = MenuImageStore.Resolve(_item.ImagePath)
         If fullPath = "" OrElse Not IO.File.Exists(fullPath) Then Return
-        Using stream As New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-            Using source As Image = Image.FromStream(stream)
-                _preview.Image = New Bitmap(source)
+        Try
+            Using stream As New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                Using source As Image = Image.FromStream(stream)
+                    _preview.Image = New Bitmap(source)
+                End Using
             End Using
-        End Using
+        Catch
+            _summary.Text &= vbCrLf & "The saved image could not be shown."
+        End Try
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)

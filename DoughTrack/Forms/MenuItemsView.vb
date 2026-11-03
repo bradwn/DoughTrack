@@ -93,7 +93,12 @@ Public Class MenuItemsView
                 If Not _loadingFilters Then ReloadGrid()
             End Sub
         AddHandler _grid.CellContentClick, AddressOf GridClick
-        AddHandler Disposed, Sub() ClearThumbs()
+        AddHandler Disposed,
+            Sub()
+                _grid.Rows.Clear()
+                ClearThumbs()
+                _blank.Dispose()
+            End Sub
 
         LoadCategories()
         ReloadGrid()
@@ -146,8 +151,8 @@ Public Class MenuItemsView
     End Sub
 
     Private Sub ReloadGrid()
-        ClearThumbs()
         _grid.Rows.Clear()
+        ClearThumbs()
         Dim category As String = ""
         If _category.SelectedIndex > 0 Then category = CStr(_category.SelectedItem)
 
@@ -173,6 +178,10 @@ Public Class MenuItemsView
                 "Edit",
                 If(item.Status = "Active", "Deactivate", "Reactivate"))
             _grid.Rows(rowIndex).Tag = item
+            If item.Status <> "Active" Then
+                _grid.Rows(rowIndex).DefaultCellStyle.ForeColor = UiTheme.TextMuted
+                _grid.Rows(rowIndex).Cells("Status").Style.ForeColor = UiTheme.Danger
+            End If
         Next
 
         _message.ForeColor = UiTheme.TextMuted

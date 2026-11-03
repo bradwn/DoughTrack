@@ -243,19 +243,11 @@ Public Class frmMain
     End Sub
 
     Private Sub ShowSales()
-        ShowContent("Sales", LoadList(
-            "Items sold today.",
-            Function() SaleRepository.GetTodaysSaleItems(Date.Today),
-            {"Unit price", "Subtotal"},
-            {"Quantity"}))
+        ShowContent("Sales", New SalesView())
     End Sub
 
     Private Sub ShowSalesHistory()
-        ShowContent("Sales History", LoadList(
-            "All completed sales.",
-            Function() SaleRepository.GetSalesHistory(),
-            {"Total"},
-            Array.Empty(Of String)()))
+        ShowContent("Sales History", New SalesHistoryView())
     End Sub
 
     Private Sub ShowMenu()
