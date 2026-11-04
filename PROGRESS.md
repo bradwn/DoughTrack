@@ -1,42 +1,38 @@
 # DoughTrack progress
 
-Updated 2026-11-04 (evening), deadline 2026-11-07.
+Updated 2026-11-04 (night). Deadline 2026-11-07.
 
-## Verified by reading the source (not by running it)
+## Module status
 | Module | Status | Evidence |
 |---|---|---|
-| Login | Implemented | frmLogin.vb, PBKDF2 hashing, UserRepository |
-| Main shell / navigation | Implemented | frmMain.vb (sidebar, content host, logout) |
-| Dashboard | Implemented | DashboardView.vb, DashboardRepository.vb. Today's Expense already reads `expenses` |
-| Menu Items + recipes | Implemented | MenuItemsView, frmMenuItemEdit, RecipeEditor, repositories |
-| Sales | Implemented but BLOCKED | Needs migration 002 |
-| Sales History | Implemented | SalesHistoryView, frmSaleDetails |
-| Inventory Stocks | WAS A PLACEHOLDER. Now written (this pass), uncompiled | StocksView, frmInventoryItemEdit, InventoryItemRepository |
-| Stock-In | WAS A PLACEHOLDER. Now written, uncompiled | StockInView, StockInRepository (transaction) |
-| Low Stock | Now written, uncompiled | LowStockView |
-| Expenses (Prompt 8) | Written, uncompiled | ExpensesView, frmExpenseEdit, ExpenseRepository |
+| Login / Logout | Working | Developer tested (T7) |
+| Main shell and sidebar | Working | Used throughout testing |
+| Dashboard | Working | Sales and Expense figures matched; Low Stocks card matched |
+| Menu Items + recipes | Working | Iced Coffee created, recipe persisted |
+| Sales | Working | Sale of 2 deducted stock correctly; over-quantity blocked on screen |
+| Sales History | Working | Sale appears; old sale unchanged after price edit |
+| Inventory > Stocks | Working (core) | Add, duplicate, blank, Low status tested; see TESTING_RESULTS.md for untested items |
+| Inventory > Stock-In | Working (core) | +3 L Milk = +3,000 ml; validation tested |
+| Inventory > Low Stock | Working (core) | Listing and Dashboard match tested |
+| Expenses | Working (core) | Add and validation tested; Dashboard updates |
+| Settings (change password) | Working | Built this session; developer reported all steps worked |
 
-Developer reported Rebuild succeeded (0 errors) on the Cursor code before these files were added.
-
-## Files added/replaced this pass (copy into the project, same relative paths under DoughTrack/DoughTrack/)
-- Helpers/StockFormat.vb (new)
-- Data/InventoryItemRepository.vb (replaced; `GetStocks` removed, `GetLowStock` keeps its columns and adds `Status`)
-- Data/StockInRepository.vb (replaced; `GetStockIns` removed)
-- Data/ExpenseRepository.vb (replaced; `GetExpenses` removed)
-- Forms/StocksView.vb, frmInventoryItemEdit.vb, StockInView.vb, LowStockView.vb, ExpensesView.vb, frmExpenseEdit.vb (new)
-- Forms/frmMain.vb (replaced; only the four Show... methods changed, LoadList removed)
+## Done this session
+- Migration 002 applied and verified.
+- Stocks, Stock-In, Low Stock, Expenses written, built (0 errors), and core-tested.
+- Settings page added: SettingsView.vb, UserRepository.UpdatePasswordHash, Settings button in frmMain.
+- Insufficient-stock wording change in SaleRepository.DeductStock was given to the developer ("Insufficient stock for X."). Developer has not explicitly confirmed it was applied.
 
 ## Design decisions
 - Inventory items are never deleted; Deactivate/Reactivate.
 - Unit of an item is locked once a recipe or stock-in uses it.
-- Stock-In converts the entered unit to the item's unit (kg<->g, L<->ml), updates quantity, and sets unit_cost to a weighted average, all in one transaction.
+- Stock-In converts kg/g and L/ml, updates quantity, and sets unit_cost to a weighted average in one transaction.
 - Stock status: Out of Stock (qty<=0), Low (qty<=reorder), Normal, Inactive.
-- Expense delete is a real delete (nothing references expenses).
-- Display codes ING-001 / SUP-001 are computed, not stored.
+- Expense delete is a real delete.
+- Settings: change password only (min 8 characters, current password required).
 
 ## Remaining
-1. Run migration 002 (root, Workbench).
-2. Build; fix compile errors if any.
-3. Run tests in TESTING_RESULTS.md and report results.
-4. Prompt 9 integration pass (sales deduction, rollback, dashboard match, history snapshot).
-5. Cleanup list in KNOWN_ISSUES.md; decide on Settings page.
+1. Confirm cleanup (see KNOWN_ISSUES.md).
+2. Run the untested items in TESTING_RESULTS.md if time allows.
+3. Recount rows in DATABASE_STRUCTURE.md after testing.
+4. Final build, then submit by 2026-11-07.

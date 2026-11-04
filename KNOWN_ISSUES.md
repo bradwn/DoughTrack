@@ -1,28 +1,28 @@
 # DoughTrack known issues
 
-Updated 2026-11-04.
+Updated 2026-11-04 (night).
 
-## Blocking
-1. **Migration 002 not applied.** `Database/Migrations/002_sale_cogs_snapshot.sql` must be run as root in Workbench. Until then Complete Sale refuses to save (by design) and Sales History labels items "Item <id>". Darwin cannot ALTER tables.
-2. **New files not yet compiled.** Inventory Stocks, Stock-In, Low Stock, Expenses files were written without a compiler available. Expect possible small compile errors; send the Error List text.
+## Resolved
+1. Migration 002 applied and verified.
+2. New files compile (0 errors).
+3. Settings page (change password) built and tested.
 
-## Gaps against the specification / Figma
-3. **Settings page** (Figma: username + change password) is not built and is not in the module list. Sidebar has no Settings item. Ask the owner whether it is required.
-4. **Sidebar is plain text** (no Doughtown logo image) and does not show the Admin dropdown/notification icon from Figma. The header shows the user's full name only.
-5. **Figma Inventory Overview** (Total Items / Low Stock / Out of Stock cards) is not in the spec's three-tab list, so it was not built.
-6. **Pagination** (Showing 1-7 of 7) from Figma is not implemented; grids scroll.
-7. Menu item **description** field from Figma does not exist in the approved database (no column). Not added.
-8. Error text for insufficient stock in `SaleRepository.DeductStock` reads "Not enough <item> to complete this sale." The spec example is "Insufficient stock for <item>." Align wording during Prompt 9.
-9. Dashboard "Fast Moving Items" uses the current menu name, not the sale snapshot name.
-10. Deactivating an inventory item does not block sales that use it in a recipe (SaleRepository ignores inventory status). Decide if that is acceptable.
+## To confirm (developer has not explicitly confirmed these)
+4. SaleRepository.DeductStock message changed to "Insufficient stock for <item>." (two lines near 450 and 459). Check with Ctrl+F for "Not enough" in Data/SaleRepository.vb: it should find nothing.
+5. Deleted from the project: Form1.vb, Form1.Designer.vb, Form1.resx (Form1.vb had a hardcoded admin password string), Forms/RecordListView.vb, Forms/frmExpenseDetails.vb and its `Compile Remove` line in DoughTrack.vbproj. Check Solution Explorer and the folder. Developer reported the rebuild still has 0 errors.
 
-## Cleanup
-11. `Form1.vb` / `Form1.Designer.vb` / `Form1.resx` are the leftover temporary test form (not the startup form). `Form1.vb` contains a hardcoded admin password string. Delete these three files from the project.
-12. `Forms/RecordListView.vb` is no longer used after this change. It can be deleted.
-13. `DATABASE_STRUCTURE.md` lists row counts as of 2026-11-04 morning; recount after testing.
-14. Earlier chat guidance told the developer to create a separate throwaway project (Steps 1-6 in the chat). The Cursor project is the real one; the chat project can be discarded.
+## Open gaps
+6. Logo image, Admin dropdown/notification icon, and pagination from the Figma design are not built.
+7. Figma Inventory Overview cards are not in the approved module list and were not built.
+8. Menu item description from Figma has no database column and was not added.
+9. Dashboard Fast Moving Items uses the current menu name, not the saved sale name.
+10. Deactivating an inventory item does not block sales that use it in a recipe.
+11. The SaleRepository insufficient-stock safety check was not triggered directly in testing; the Sales screen blocks over-quantity first.
+12. Untested items are listed in TESTING_RESULTS.md ("Not yet run").
+13. DATABASE_STRUCTURE.md row counts are from 2026-11-04 morning; recount after testing.
 
 ## Security notes
-- `appsettings.json` is gitignored; the repo only has `appsettings.example.json`. Confirm with `git ls-files`.
-- Passwords are PBKDF2 hashed. All SQL found so far uses parameters. The only dynamic SQL is the IN list in `SaleRepository.LockStock`, which builds `@id0, @id1...` parameter NAMES only (values are parameters).
+- appsettings.json is gitignored; the repo has only appsettings.example.json. Confirm with `git ls-files`.
+- Passwords are PBKDF2 hashed, including when changed in Settings. All SQL uses parameters. The only dynamic SQL is the IN list in SaleRepository.LockStock, which builds parameter NAMES only.
 - Do not run the Workbench dump files in OneDrive\Documents\dumps (they contain DROP TABLE).
+- Never put the database or admin password in any document.

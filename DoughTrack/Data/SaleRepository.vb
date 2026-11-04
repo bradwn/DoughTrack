@@ -447,7 +447,7 @@ Namespace Data
 
         Private Sub DeductStock(conn As MySqlConnection, transaction As MySqlTransaction, row As StockRow, needed As Decimal)
             If needed > row.OnHand Then
-                Throw New InvalidOperationException("Not enough " & row.ItemName & " to complete this sale.")
+                Throw New InvalidOperationException("Insufficient stock for " & row.ItemName & ".")
             End If
             Const sql As String =
                 "UPDATE inventory_items SET quantity = quantity - @needed " &
@@ -456,7 +456,7 @@ Namespace Data
                 cmd.Parameters.Add(DecimalParam("@needed", needed, 3))
                 cmd.Parameters.Add(Param("@id", MySqlDbType.Int32, row.InventoryItemId))
                 If cmd.ExecuteNonQuery() <> 1 Then
-                    Throw New InvalidOperationException("Not enough " & row.ItemName & " to complete this sale.")
+                    Throw New InvalidOperationException("Insufficient stock for " & row.ItemName & ".")
                 End If
             End Using
         End Sub

@@ -155,6 +155,7 @@ Public Class frmMain
         AddNav("Stock-In", 32, AddressOf ShowStockIn)
         AddNav("Low Stock", 32, AddressOf ShowLowStock)
         AddNav("Expenses", 16, AddressOf ShowExpenses)
+        AddNav("Settings", 16, AddressOf ShowSettings)
     End Sub
 
     Private Function AddNav(caption As String, leftPadding As Integer, onClick As EventHandler) As Button
@@ -268,6 +269,10 @@ Public Class frmMain
 
     Private Sub ShowExpenses()
         ShowContent("Expenses", New ExpensesView())
+    End Sub
+
+    Private Sub ShowSettings()
+        ShowContent("Settings", New SettingsView())
     End Sub
 
     Private Sub Logout_Click(sender As Object, e As EventArgs)

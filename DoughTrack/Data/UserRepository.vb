@@ -55,6 +55,25 @@ Namespace Data
             End Using
         End Sub
 
+        ''' <summary>
+        ''' Saves a new password hash for one user. The password must already be hashed.
+        ''' </summary>
+        Public Sub UpdatePasswordHash(userId As Integer, passwordHash As String)
+            Const sql As String =
+                "UPDATE users SET password_hash = @passwordHash WHERE user_id = @userId"
+
+            Using conn As MySqlConnection = DatabaseHelper.CreateConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@passwordHash", passwordHash)
+                    cmd.Parameters.AddWithValue("@userId", userId)
+                    If cmd.ExecuteNonQuery() <> 1 Then
+                        Throw New InvalidOperationException("Unable to find your account to update.")
+                    End If
+                End Using
+            End Using
+        End Sub
+
     End Module
 
 End Namespace
