@@ -2,7 +2,8 @@
 -- Does not drop tables, delete rows, or change existing values except blank item names.
 -- Run in MySQL Workbench as an administrator, with doughtrack_db selected.
 -- The application user Darwin cannot ALTER tables.
-
+   SET SQL_SAFE_UPDATES = 0;
+   USE doughtrack_db;
 SET @schema_name := DATABASE();
 
 SET @sales_cogs_exists := (

@@ -255,42 +255,20 @@ Public Class frmMain
     End Sub
 
     Private Sub ShowStocks()
-        ShowContent("Stocks", LoadList(
-            "Current inventory quantities.",
-            Function() InventoryItemRepository.GetStocks(),
-            {"Unit cost"},
-            {"On hand", "Reorder point"}))
+        ShowContent("Stocks", New StocksView())
     End Sub
 
     Private Sub ShowStockIn()
-        ShowContent("Stock-In", LoadList(
-            "Stock-in records.",
-            Function() StockInRepository.GetStockIns(),
-            {"Total cost"},
-            {"Lines"}))
+        ShowContent("Stock-In", New StockInView())
     End Sub
 
     Private Sub ShowLowStock()
-        ShowContent("Low Stock", LoadList(
-            "Active items at or below the reorder point.",
-            Function() InventoryItemRepository.GetLowStock(),
-            Array.Empty(Of String)(),
-            {"On hand", "Reorder point"}))
+        ShowContent("Low Stock", New LowStockView())
     End Sub
 
     Private Sub ShowExpenses()
         ShowContent("Expenses", New ExpensesView())
     End Sub
-
-    Private Shared Function LoadList(subtitle As String, load As Func(Of DataTable), moneyColumns As String(), quantityColumns As String()) As RecordListView
-        Try
-            Return New RecordListView(subtitle, load(), moneyColumns, quantityColumns)
-        Catch ex As Exception
-            Dim view As New RecordListView(subtitle, New DataTable(), moneyColumns, quantityColumns)
-            view.ShowError(ex.Message)
-            Return view
-        End Try
-    End Function
 
     Private Sub Logout_Click(sender As Object, e As EventArgs)
         Close()
