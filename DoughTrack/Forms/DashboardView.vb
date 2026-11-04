@@ -48,7 +48,7 @@ Public Class DashboardView
         topRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.34F))
         topRow.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
         topRow.Controls.Add(_salesCard, 0, 0)
-        topRow.Controls.Add(MakeListCard("Fast Moving Items", _fastGrid, _fastStatus), 1, 0)
+        topRow.Controls.Add(_expenseCard, 0, 0)
         topRow.Controls.Add(_profitCard, 2, 0)
         _salesCard.Dock = DockStyle.Fill
         _profitCard.Dock = DockStyle.Fill
@@ -63,7 +63,8 @@ Public Class DashboardView
         bottomRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
         bottomRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
         bottomRow.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        bottomRow.Controls.Add(_expenseCard, 0, 0)
+
+        bottomRow.Controls.Add(MakeListCard("Fast Moving Items", _fastGrid, _fastStatus), 0, 0)
         bottomRow.Controls.Add(MakeListCard("Low Stocks", _lowGrid, _lowStatus), 1, 0)
         _expenseCard.Dock = DockStyle.Fill
 
@@ -183,6 +184,12 @@ Public Class DashboardView
     End Sub
 
     Private Sub InitializeComponent()
+        SuspendLayout()
+        ' 
+        ' DashboardView
+        ' 
+        Name = "DashboardView"
+        ResumeLayout(False)
 
     End Sub
 
@@ -192,4 +199,7 @@ Public Class DashboardView
         _errorLabel.Visible = False
     End Sub
 
+    Private Sub DashboardView_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+    End Sub
 End Class
