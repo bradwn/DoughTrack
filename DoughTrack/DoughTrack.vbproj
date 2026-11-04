@@ -13,6 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Resources\**\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Windows.Forms" />
@@ -41,7 +47,6 @@
 
   <ItemGroup>
 	<Folder Include="Services\" />
-	<Folder Include="Resources\" />
   </ItemGroup>
 
   <ItemGroup>
