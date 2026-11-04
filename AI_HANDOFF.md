@@ -1,6 +1,6 @@
 # DoughTrack AI Handoff
 
-Updated 2026-11-04 after Sales History. Read `DESIGN_REFERENCE.md`, `DATABASE_STRUCTURE.md`, and `PROGRESS.md` with this file.
+Updated 2026-11-04 after Expenses. Read `DESIGN_REFERENCE.md`, `DATABASE_STRUCTURE.md`, and `PROGRESS.md` with this file.
 
 Branch `main` tracks `origin/main`. Framework remains .NET 10 Windows Forms. Startup form is `frmLogin`. Do not add Suppliers, Staff, Customers, Reports, or a payment flow. There is one admin account.
 
@@ -54,6 +54,24 @@ Two servings deduct twice each recipe component. Components shared by different 
 `SaleRepository.GetSale` loads one sale for the details window. The detail grid uses `sale_items.quantity`, `unit_price`, and `subtotal`. The item name is `sale_items.menu_item_name` when that column exists and is not blank. History does not read `menu_items.menu_item_name` or `menu_items.selling_price`. If the name snapshot is missing or blank, the line is labeled `Item` plus the menu item id.
 
 The history query was run against `doughtrack_db`. It returned no rows because no sales are saved yet. The screen was not opened.
+
+## Expenses
+
+`Forms/ExpensesView.vb` is the Expenses screen. `frmExpenseEdit` adds or edits one row. `frmExpenseDetails` opens from View or a double-click.
+
+`ExpenseRepository` reads and writes only `expenses`. Every value is a parameter.
+
+- The grid shows expense id, date, category, amount, description, and View, Edit, and Delete.
+- Search matches the expense id, category, description, and `YYYY-MM-DD` date text.
+- Category lists categories already stored on expenses. The add form also offers Ingredients, Rent, Salaries, Supplies, and Utilities, and the category box accepts a new name up to 50 characters.
+- From and To use `expense_date`. Each date box stays unchecked until the user checks it. The end date includes that whole day.
+- Date is required. Category is required. Amount must be greater than zero and at most 99,999,999.99. Description is optional and stored as NULL when blank. The database check `amount > 0` remains.
+- Delete asks first, then runs `DELETE FROM expenses WHERE expense_id = @id`. No other table references `expenses`, so the delete cannot change sales, inventory, menu items, or users. If the row is already gone, the screen says so and does not delete anything else.
+- The footer shows the visible range, for example `Showing 1–2 of 5 expenses`, and the total amount of the rows on screen.
+
+`DashboardRepository.GetTodaysExpenses` already sums `expenses.amount` where `expense_date` is today. Opening the dashboard runs that query again, so Today's Expense follows rows saved, edited, or deleted on the Expenses screen. An expense dated another day is not included.
+
+A check on 2026-11-04 inserted one Utilities expense dated today, confirmed today's sum included 125.50, updated that same row to 80.00, then deleted it. `expenses` was 0 before and 0 after. `users` stayed at 1. Menu, inventory, sales, and stock-in counts stayed 0. The Expenses screen was not opened.
 
 ## Also in the working tree
 

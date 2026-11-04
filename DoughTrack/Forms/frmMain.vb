@@ -279,11 +279,7 @@ Public Class frmMain
     End Sub
 
     Private Sub ShowExpenses()
-        ShowContent("Expenses", LoadList(
-            "Recorded expenses.",
-            Function() ExpenseRepository.GetExpenses(),
-            {"Amount"},
-            Array.Empty(Of String)()))
+        ShowContent("Expenses", New ExpensesView())
     End Sub
 
     Private Shared Function LoadList(subtitle As String, load As Func(Of DataTable), moneyColumns As String(), quantityColumns As String()) As RecordListView

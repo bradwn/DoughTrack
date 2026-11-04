@@ -1,6 +1,6 @@
 # DoughTrack progress
 
-Updated 2026-11-04 after Sales History.
+Updated 2026-11-04 after Expenses.
 
 ## Already on origin/main
 
@@ -8,7 +8,22 @@ Commit `50718a3` is on `main` and matches `origin/main`. The earlier push is don
 
 ## This pass
 
-Sales History reads completed sales from MySQL. It is not a Reports module, and it does not add a table.
+Expenses reads and writes the existing `expenses` table. It is not a Reports module, and it does not add a table.
+
+- The grid columns are Expense ID, Date, Category, Amount, Description, and Actions (View, Edit, Delete).
+- Add and Edit require a date and a category. Amount must be greater than zero. Description is optional.
+- Search matches the expense id, category, description, and date text.
+- From and To date filters are optional. A checked end date includes that whole day. Category filters the stored expense category.
+- View Details shows the expense id, date, category, amount, and description from the database.
+- Delete removes only that expense after confirmation. Sales, inventory, and other records are not part of the statement.
+- The footer shows how many expenses are visible out of the full table, plus the total of the visible amounts.
+- Today's Expense on the dashboard is the sum of `expenses.amount` for `expense_date` today. It recalculates when the dashboard opens.
+
+`dotnet build DoughTrack.slnx` succeeded with 0 warnings and 0 errors. A temporary expense dated today was inserted, included in today's sum, updated, and deleted. `expenses` returned to 0 rows. The admin user and the other empty tables were unchanged. The screen was not opened.
+
+## Still in the working tree
+
+Sales History reads completed sales from MySQL.
 
 - The grid columns are Sale ID, Date and Time, Items, Total Amount, and View Details.
 - Search matches the sale id, the date, and the item name saved on the sale.
@@ -16,10 +31,6 @@ Sales History reads completed sales from MySQL. It is not a Reports module, and 
 - Category filters sales that contain a menu item currently in that category. The sale does not store a category, so this list can follow a later menu edit. Names and prices on the sale do not.
 - View Details shows the transaction id, date and time, each saved item, quantity, unit price, line subtotal, and the sale total.
 - Item names come from `sale_items.menu_item_name` when that column exists. Unit price and subtotal always come from `sale_items`. The screen does not display the menu item's current name or selling price. A missing name is shown as `Item` plus the menu item id.
-
-`dotnet build DoughTrack.slnx` succeeded with 0 warnings and 0 errors. The history query ran on `doughtrack_db` and returned no rows. `sales` and `sale_items` are still empty. The screen was not opened.
-
-## Still in the working tree
 
 Sales is a point-of-sale screen: menu cards on the left, the current order on the right.
 
