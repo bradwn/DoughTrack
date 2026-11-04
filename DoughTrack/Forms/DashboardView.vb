@@ -19,7 +19,6 @@ Public Class DashboardView
     Public Sub New()
         Dock = DockStyle.Fill
         BackColor = UiTheme.Content
-        Padding = New Padding(12)
 
         _errorLabel = New Label With {
             .Dock = DockStyle.Top,
@@ -28,48 +27,48 @@ Public Class DashboardView
             .Visible = False
         }
 
-        _salesCard = New MetricCard("Today's Sale", "Completed sales today")
-        _profitCard = New MetricCard("Estimated Gross Profit", "Today's revenue minus cost of goods sold")
+        _salesCard = New MetricCard("Today's Sales", "Completed sales today")
+        _profitCard = New MetricCard("Est. Gross Profit", "Revenue minus cost of goods sold")
         _expenseCard = New MetricCard("Today's Expense", "Expenses dated today")
-
-        Dim metrics As New TableLayoutPanel With {
-            .Dock = DockStyle.Top,
-            .Height = 156,
-            .ColumnCount = 3,
-            .RowCount = 1,
-            .BackColor = UiTheme.Content
-        }
-        metrics.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33F))
-        metrics.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33F))
-        metrics.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.34F))
-        metrics.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        metrics.Controls.Add(_salesCard, 0, 0)
-        metrics.Controls.Add(_profitCard, 1, 0)
-        metrics.Controls.Add(_expenseCard, 2, 0)
-        _salesCard.Dock = DockStyle.Fill
-        _profitCard.Dock = DockStyle.Fill
-        _expenseCard.Dock = DockStyle.Fill
 
         _fastGrid = New DataGridView()
         _fastStatus = New Label()
         _lowGrid = New DataGridView()
         _lowStatus = New Label()
 
-        Dim lists As New TableLayoutPanel With {
+        Dim topRow As New TableLayoutPanel With {
+            .Dock = DockStyle.Top,
+            .Height = 188,
+            .ColumnCount = 3,
+            .RowCount = 1,
+            .BackColor = UiTheme.Content
+        }
+        topRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33F))
+        topRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.33F))
+        topRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.34F))
+        topRow.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+        topRow.Controls.Add(_salesCard, 0, 0)
+        topRow.Controls.Add(MakeListCard("Fast Moving Items", _fastGrid, _fastStatus), 1, 0)
+        topRow.Controls.Add(_profitCard, 2, 0)
+        _salesCard.Dock = DockStyle.Fill
+        _profitCard.Dock = DockStyle.Fill
+
+        Dim bottomRow As New TableLayoutPanel With {
             .Dock = DockStyle.Fill,
             .ColumnCount = 2,
             .RowCount = 1,
             .BackColor = UiTheme.Content,
             .Padding = New Padding(0, 4, 0, 0)
         }
-        lists.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
-        lists.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
-        lists.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        lists.Controls.Add(MakeListCard("Fast Moving Items", "Ranked by quantity sold", _fastGrid, _fastStatus), 0, 0)
-        lists.Controls.Add(MakeListCard("Low Stocks", "Active items at or below the reorder point", _lowGrid, _lowStatus), 1, 0)
+        bottomRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+        bottomRow.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+        bottomRow.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+        bottomRow.Controls.Add(_expenseCard, 0, 0)
+        bottomRow.Controls.Add(MakeListCard("Low Stocks", _lowGrid, _lowStatus), 1, 0)
+        _expenseCard.Dock = DockStyle.Fill
 
-        Controls.Add(lists)
-        Controls.Add(metrics)
+        Controls.Add(bottomRow)
+        Controls.Add(topRow)
         Controls.Add(_errorLabel)
     End Sub
 
@@ -120,6 +119,15 @@ Public Class DashboardView
         Try
             BindList(_lowGrid, _lowStatus, InventoryItemRepository.GetLowStock(),
                      Array.Empty(Of String)(), {"On hand", "Reorder point"})
+            For Each gridRow As DataGridViewRow In _lowGrid.Rows
+                If _lowGrid.Columns.Contains("Status") Then
+                    gridRow.Cells("Status").Style.ForeColor = UiTheme.Danger
+                    gridRow.Cells("Status").Style.Font = New Font("Segoe UI", 9.0!, FontStyle.Bold)
+                End If
+                If _lowGrid.Columns.Contains("On hand") Then
+                    gridRow.Cells("On hand").Style.ForeColor = UiTheme.Danger
+                End If
+            Next
         Catch ex As Exception
             _lowStatus.Text = ex.Message
             _lowStatus.ForeColor = UiTheme.Danger
@@ -127,36 +135,27 @@ Public Class DashboardView
         End Try
     End Sub
 
-    Private Shared Function MakeListCard(title As String, subtitle As String, grid As DataGridView, status As Label) As Panel
+    Private Shared Function MakeListCard(title As String, grid As DataGridView, status As Label) As Panel
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
-            .Margin = New Padding(8),
-            .Padding = New Padding(16, 12, 16, 12)
+            .BackColor = UiTheme.Card,
+            .Margin = New Padding(8)
         }
-        Dim titleLabel As New Label With {
-            .Dock = DockStyle.Top,
-            .Height = 26,
-            .Text = title,
-            .Font = New Font("Segoe UI", 12.0!, FontStyle.Bold),
-            .ForeColor = UiTheme.TextDark
-        }
-        Dim subtitleLabel As New Label With {
-            .Dock = DockStyle.Top,
-            .Height = 22,
-            .Text = subtitle,
-            .ForeColor = UiTheme.TextMuted
+        Dim header As Panel = UiTheme.MakeSectionHeader(title)
+        Dim body As New Panel With {
+            .Dock = DockStyle.Fill,
+            .BackColor = UiTheme.Card,
+            .Padding = New Padding(8, 4, 8, 8)
         }
         status.Dock = DockStyle.Top
-        status.Height = 22
+        status.Height = 20
         status.ForeColor = UiTheme.TextMuted
         grid.Dock = DockStyle.Fill
         UiTheme.StyleGrid(grid)
-
-        card.Controls.Add(grid)
-        card.Controls.Add(status)
-        card.Controls.Add(subtitleLabel)
-        card.Controls.Add(titleLabel)
+        body.Controls.Add(grid)
+        body.Controls.Add(status)
+        card.Controls.Add(body)
+        card.Controls.Add(header)
         Return card
     End Function
 
@@ -181,6 +180,10 @@ Public Class DashboardView
         _errorLabel.Text = message
         _errorLabel.Height = 36
         _errorLabel.Visible = True
+    End Sub
+
+    Private Sub InitializeComponent()
+
     End Sub
 
     Private Sub HideError()

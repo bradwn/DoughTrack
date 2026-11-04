@@ -24,7 +24,7 @@ Public Class ExpensesView
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
 
@@ -34,21 +34,20 @@ Public Class ExpensesView
             .WrapContents = True,
             .FlowDirection = FlowDirection.LeftToRight
         }
-        _search = New TextBox With {.Width = 200}
+        _search = New TextBox With {.Width = 240}
         _category = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 170}
         ' ShowCheckBox: the date filter is off until the box is ticked.
         _from = New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False, .Width = 130}
         _to = New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False, .Width = 130}
         Dim searchButton As Button = UiTheme.MakeButton("Search")
         Dim clearButton As Button = UiTheme.MakeButton("Clear Filters")
-        Dim addButton As Button = UiTheme.MakeButton("Add Expense")
+        Dim addButton As Button = UiTheme.MakeButton("Add Expenses")
 
-        tools.Controls.Add(New Label With {.Text = "Search", .AutoSize = True, .Padding = New Padding(0, 8, 6, 0)})
         tools.Controls.Add(_search)
-        tools.Controls.Add(searchButton)
-        tools.Controls.Add(New Label With {.Text = "Category", .AutoSize = True, .Padding = New Padding(12, 8, 6, 0)})
         tools.Controls.Add(_category)
+        tools.Controls.Add(searchButton)
         tools.Controls.Add(addButton)
+        UiTheme.SetCue(_search, "Search expenses...")
         tools.SetFlowBreak(addButton, True)
         tools.Controls.Add(New Label With {.Text = "From", .AutoSize = True, .Padding = New Padding(0, 8, 6, 0)})
         tools.Controls.Add(_from)
@@ -93,6 +92,7 @@ Public Class ExpensesView
         AddHandler _to.ValueChanged, Sub() ReloadGrid()
         AddHandler _grid.CellContentClick, AddressOf GridClick
 
+        UiTheme.StyleInputs(Me)
         LoadCategories()
         ReloadGrid()
     End Sub
@@ -113,7 +113,7 @@ Public Class ExpensesView
         Dim selected As String = ""
         If _category.SelectedIndex > 0 Then selected = CStr(_category.SelectedItem)
         _category.Items.Clear()
-        _category.Items.Add("All categories")
+        _category.Items.Add("All Categories")
         Try
             For Each category As String In ExpenseRepository.GetCategories()
                 _category.Items.Add(category)
@@ -227,19 +227,17 @@ Public Class ExpensesView
             expense.ExpenseDate.ToString("MMM d, yyyy") & "  |  " & expense.Category & "  |  " &
             UiTheme.FormatMoney(expense.Amount) & vbCrLf & vbCrLf &
             "This cannot be undone."
-        If MessageBox.Show(FindForm(), question, "DoughTrack", MessageBoxButtons.YesNo,
-                           MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+        If Not UiTheme.Confirm(FindForm(), question) Then Return
         Try
             ExpenseRepository.Delete(expense.ExpenseId)
             LoadCategories()
             ReloadGrid()
         Catch ex As InvalidOperationException
-            MessageBox.Show(FindForm(), ex.Message, "DoughTrack", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            UiTheme.Notify(FindForm(), ex.Message)
             ReloadGrid()
         Catch ex As Exception
             Debug.WriteLine("EXPENSE DELETE ERROR: " & ex.ToString())
-            MessageBox.Show(FindForm(), "Unable to delete this expense.", "DoughTrack",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+            UiTheme.Notify(FindForm(), "Unable to delete this expense.")
         End Try
     End Sub
 

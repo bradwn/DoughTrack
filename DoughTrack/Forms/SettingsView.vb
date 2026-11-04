@@ -25,7 +25,7 @@ Public Class SettingsView
         Dim card As New Panel With {
             .Location = New Point(24, 24),
             .Size = New Size(560, 430),
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(20)
         }
 

@@ -23,7 +23,7 @@ Public Class RecipeEditor
 
     Public Sub New()
         Dock = DockStyle.Fill
-        BackColor = Color.White
+        BackColor = UiTheme.Card
 
         Dim tools As New FlowLayoutPanel With {
             .Dock = DockStyle.Top,

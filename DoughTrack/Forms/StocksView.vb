@@ -22,7 +22,7 @@ Public Class StocksView
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
 
@@ -32,22 +32,21 @@ Public Class StocksView
             .WrapContents = False,
             .FlowDirection = FlowDirection.LeftToRight
         }
-        _search = New TextBox With {.Width = 200}
+        _search = New TextBox With {.Width = 220}
         _category = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 150}
-        _category.Items.AddRange(New Object() {"All categories", "Ingredients", "Supplies"})
+        _category.Items.AddRange(New Object() {"All Categories", "Ingredients", "Supplies"})
         _category.SelectedIndex = 0
-        _status = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 130}
+        _status = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 140}
         _status.Items.AddRange(New Object() {"All status", "Normal", "Low", "Out of Stock", "Inactive"})
         _status.SelectedIndex = 0
         Dim searchButton As Button = UiTheme.MakeButton("Search")
         Dim addButton As Button = UiTheme.MakeButton("Add Item")
-        tools.Controls.Add(New Label With {.Text = "Search", .AutoSize = True, .Padding = New Padding(0, 8, 6, 0)})
         tools.Controls.Add(_search)
-        tools.Controls.Add(searchButton)
-        tools.Controls.Add(New Label With {.Text = "Filter", .AutoSize = True, .Padding = New Padding(12, 8, 6, 0)})
         tools.Controls.Add(_category)
         tools.Controls.Add(_status)
+        tools.Controls.Add(searchButton)
         tools.Controls.Add(addButton)
+        UiTheme.SetCue(_search, "Search items...")
 
         _message = New Label With {
             .Dock = DockStyle.Bottom,
@@ -81,6 +80,7 @@ Public Class StocksView
         AddHandler _status.SelectedIndexChanged, Sub() ReloadGrid()
         AddHandler _grid.CellContentClick, AddressOf GridClick
 
+        UiTheme.StyleInputs(Me)
         ReloadGrid()
     End Sub
 
@@ -185,15 +185,13 @@ Public Class StocksView
         Else
             question = "Reactivate """ & item.ItemName & """?"
         End If
-        If MessageBox.Show(FindForm(), question, "DoughTrack", MessageBoxButtons.YesNo,
-                           MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        If Not UiTheme.Confirm(FindForm(), question) Then Return
         Try
             InventoryItemRepository.SetStatus(item.InventoryItemId, If(makeInactive, "Inactive", "Active"))
             ReloadGrid()
         Catch ex As Exception
             Debug.WriteLine("INVENTORY STATUS ERROR: " & ex.ToString())
-            MessageBox.Show(FindForm(), "Unable to change the status of this item.", "DoughTrack",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+            UiTheme.Notify(FindForm(), "Unable to change the status of this item.")
         End Try
     End Sub
 

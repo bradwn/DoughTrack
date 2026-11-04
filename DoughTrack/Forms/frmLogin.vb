@@ -3,6 +3,18 @@ Imports DoughTrack.Helpers
 
 Public Class frmLogin
 
+    Private Sub frmLogin_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Dim logo As Image = UiTheme.LogoImage()
+        If logo Is Nothing Then
+            picLogo.Visible = False
+            lblLogoFallback.Visible = True
+            Return
+        End If
+        picLogo.Image = logo
+        picLogo.Visible = True
+        lblLogoFallback.Visible = False
+    End Sub
+
     Private Sub btnLogin_Click(sender As Object, e As EventArgs) Handles btnLogin.Click
         lblMessage.Text = ""
 

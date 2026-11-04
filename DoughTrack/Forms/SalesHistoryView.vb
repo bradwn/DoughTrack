@@ -24,7 +24,7 @@ Public Class SalesHistoryView
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
 
@@ -38,17 +38,16 @@ Public Class SalesHistoryView
             .WrapContents = False,
             .FlowDirection = FlowDirection.LeftToRight
         }
-        _search = New TextBox With {.Width = 220}
+        _search = New TextBox With {.Width = 260}
         _category = New ComboBox With {
             .DropDownStyle = ComboBoxStyle.DropDownList,
             .Width = 180
         }
         Dim searchButton As Button = UiTheme.MakeButton("Search")
-        searchRow.Controls.Add(FieldLabel("Search"))
         searchRow.Controls.Add(_search)
-        searchRow.Controls.Add(searchButton)
-        searchRow.Controls.Add(FieldLabel("Category"))
         searchRow.Controls.Add(_category)
+        searchRow.Controls.Add(searchButton)
+        UiTheme.SetCue(_search, "Search sales...")
 
         Dim dateRow As New FlowLayoutPanel With {
             .Dock = DockStyle.Top,
@@ -111,6 +110,7 @@ Public Class SalesHistoryView
 
         AddHandler _fromDate.HandleCreated, Sub() UncheckDate(_fromDate)
         AddHandler _toDate.HandleCreated, Sub() UncheckDate(_toDate)
+        UiTheme.StyleInputs(Me)
         LoadCategories()
         ReloadGrid()
     End Sub
@@ -157,7 +157,7 @@ Public Class SalesHistoryView
         Dim selected As String = ""
         If _category.SelectedIndex > 0 Then selected = CStr(_category.SelectedItem)
         _category.Items.Clear()
-        _category.Items.Add("All categories")
+        _category.Items.Add("All Categories")
         Try
             For Each category As String In SaleRepository.GetHistoryCategories()
                 _category.Items.Add(category)

@@ -258,7 +258,7 @@ Partial Class frmLogin
         ' picLogo
         ' 
         picLogo.BackColor = Color.White
-        picLogo.ImageLocation = "C:\VB Projects\DoughTrack\DoughTrack\Resources\doughtown_logo.png"
+        picLogo.ImageLocation = ""
         picLogo.Location = New Point(0, 0)
         picLogo.Margin = New Padding(0, 0, 0, 14)
         picLogo.Name = "picLogo"

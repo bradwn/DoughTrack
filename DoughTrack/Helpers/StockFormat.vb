@@ -29,7 +29,7 @@ Namespace Helpers
                 Case "Out of Stock", "Low"
                     Return UiTheme.Danger
                 Case "Normal"
-                    Return Color.FromArgb(46, 125, 80)
+                    Return UiTheme.Success
                 Case Else
                     Return UiTheme.TextMuted
             End Select

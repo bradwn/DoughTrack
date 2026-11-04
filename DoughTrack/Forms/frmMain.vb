@@ -1,4 +1,3 @@
-Imports DoughTrack.Data
 Imports DoughTrack.Helpers
 
 ''' <summary>
@@ -8,27 +7,54 @@ Public Class frmMain
     Inherits Form
 
     Private ReadOnly _navFlow As FlowLayoutPanel
+    Private ReadOnly _footer As FlowLayoutPanel
     Private ReadOnly _contentHost As Panel
     Private ReadOnly _titleLabel As Label
     Private ReadOnly _userLabel As Label
+    Private ReadOnly _adminChip As Panel
+    Private ReadOnly _bell As BellIcon
     Private ReadOnly _navButtons As New List(Of Button)
     Private _dashboardButton As Button
+    Private _settingsButton As Button
 
     Public Sub New()
         Font = New Font("Segoe UI", 10.0!)
         Text = "DoughTrack — Doughtown Cafe"
         StartPosition = FormStartPosition.CenterScreen
         MinimumSize = New Size(1100, 700)
-        ClientSize = New Size(1200, 760)
+        ClientSize = New Size(1280, 800)
         BackColor = UiTheme.Content
+        DoubleBuffered = True
 
         Dim sidebar As New Panel With {
             .Dock = DockStyle.Left,
-            .Width = 250,
+            .Width = 220,
             .BackColor = UiTheme.Sidebar
         }
         sidebar.Controls.Add(BuildBrand())
-        sidebar.Controls.Add(BuildLogout())
+
+        _footer = New FlowLayoutPanel With {
+            .Dock = DockStyle.Bottom,
+            .Height = 108,
+            .FlowDirection = FlowDirection.TopDown,
+            .WrapContents = False,
+            .BackColor = UiTheme.Sidebar,
+            .Padding = New Padding(0, 6, 0, 8)
+        }
+        _settingsButton = MakeNavButton("Settings", 18)
+        _settingsButton.Height = 42
+        _settingsButton.Margin = New Padding(0, 2, 0, 2)
+        AddHandler _settingsButton.Click, AddressOf ShowSettings
+        AddHandler _settingsButton.Click, Sub() SelectNav(_settingsButton)
+        _navButtons.Add(_settingsButton)
+
+        Dim logout As Button = MakeNavButton("Logout", 18)
+        logout.Height = 42
+        logout.Margin = New Padding(0, 2, 0, 2)
+        AddHandler logout.Click, AddressOf Logout_Click
+        _footer.Controls.Add(_settingsButton)
+        _footer.Controls.Add(logout)
+        sidebar.Controls.Add(_footer)
 
         _navFlow = New FlowLayoutPanel With {
             .Dock = DockStyle.Fill,
@@ -36,44 +62,48 @@ Public Class frmMain
             .WrapContents = False,
             .AutoScroll = True,
             .BackColor = UiTheme.Sidebar,
-            .Padding = New Padding(12, 8, 12, 8)
+            .Padding = New Padding(0, 4, 0, 8)
         }
         sidebar.Controls.Add(_navFlow)
-        ' Fill is docked after the top and bottom bars, so it keeps the space between them.
         sidebar.Controls.SetChildIndex(_navFlow, 0)
 
         BuildNavigation()
+        AddHandler sidebar.Resize, Sub() SizeNavItems()
         AddHandler _navFlow.SizeChanged, Sub() SizeNavItems()
 
         Dim header As New Panel With {
             .Dock = DockStyle.Top,
-            .Height = 76,
-            .BackColor = Color.White
-        }
-        Dim headerLine As New Panel With {
-            .Dock = DockStyle.Bottom,
-            .Height = 1,
-            .BackColor = UiTheme.Line
+            .Height = 64,
+            .BackColor = UiTheme.Header
         }
         _titleLabel = New Label With {
             .AutoSize = False,
-            .Font = New Font("Segoe UI", 18.0!, FontStyle.Bold),
-            .ForeColor = UiTheme.TextDark,
-            .Text = "Dashboard"
+            .Font = New Font("Segoe UI", 16.0!, FontStyle.Bold),
+            .ForeColor = Color.White,
+            .Text = "Dashboard",
+            .TextAlign = ContentAlignment.MiddleLeft
+        }
+        _bell = New BellIcon()
+        _adminChip = New Panel With {
+            .BackColor = UiTheme.PrimaryButton
         }
         _userLabel = New Label With {
-            .AutoSize = False,
-            .TextAlign = ContentAlignment.MiddleRight,
-            .ForeColor = UiTheme.TextMuted
+            .Dock = DockStyle.Fill,
+            .TextAlign = ContentAlignment.MiddleCenter,
+            .ForeColor = Color.White,
+            .Font = New Font("Segoe UI", 9.5!, FontStyle.Bold),
+            .Text = "Admin"
         }
-        header.Controls.Add(headerLine)
+        _adminChip.Controls.Add(_userLabel)
         header.Controls.Add(_titleLabel)
-        header.Controls.Add(_userLabel)
+        header.Controls.Add(_bell)
+        header.Controls.Add(_adminChip)
         AddHandler header.Resize, Sub() LayoutHeader()
 
         _contentHost = New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = UiTheme.Content
+            .BackColor = UiTheme.Content,
+            .Padding = New Padding(16)
         }
 
         Dim workspace As New Panel With {
@@ -92,7 +122,10 @@ Public Class frmMain
             Close()
             Return
         End If
-        _userLabel.Text = Session.CurrentUser.FullName
+        Dim name As String = Session.CurrentUser.FullName
+        If String.IsNullOrWhiteSpace(name) Then name = Session.CurrentUser.Username
+        If String.IsNullOrWhiteSpace(name) Then name = "Admin"
+        _userLabel.Text = name
         LayoutHeader()
         SizeNavItems()
         ShowDashboard()
@@ -105,63 +138,34 @@ Public Class frmMain
     Private Function BuildBrand() As Panel
         Dim brand As New Panel With {
             .Dock = DockStyle.Top,
-            .Height = 112,
+            .Height = 118,
             .BackColor = UiTheme.Sidebar
         }
-        Dim accent As New Panel With {
-            .BackColor = UiTheme.Accent
-        }
-        Dim nameLabel As New Label With {
-            .Text = "Doughtown Cafe",
-            .ForeColor = Color.White,
-            .Font = New Font("Segoe UI", 16.0!, FontStyle.Bold),
-            .AutoSize = False
-        }
-        Dim productLabel As New Label With {
-            .Text = "DoughTrack",
-            .ForeColor = UiTheme.Accent,
-            .Font = New Font("Segoe UI", 9.5!, FontStyle.Bold),
-            .AutoSize = False
-        }
-        brand.Controls.Add(nameLabel)
-        brand.Controls.Add(productLabel)
-        brand.Controls.Add(accent)
+        Dim badge As New LogoBadge()
+        brand.Controls.Add(badge)
         AddHandler brand.Resize,
             Sub()
-                accent.SetBounds(24, 28, 36, 3)
-                nameLabel.SetBounds(24, 40, brand.Width - 36, 32)
-                productLabel.SetBounds(24, 72, brand.Width - 36, 22)
+                badge.Location = New Point(Math.Max(0, (brand.Width - badge.Width) \ 2), 16)
             End Sub
         Return brand
     End Function
 
-    Private Function BuildLogout() As Button
-        Dim logout As Button = MakeNavButton("Logout", 16)
-        logout.Dock = DockStyle.Bottom
-        logout.Height = 52
-        logout.Margin = New Padding(0)
-        logout.FlatAppearance.MouseOverBackColor = Color.FromArgb(92, 56, 48)
-        AddHandler logout.Click, AddressOf Logout_Click
-        Return logout
-    End Function
-
     Private Sub BuildNavigation()
-        _dashboardButton = AddNav("Dashboard", 16, AddressOf ShowDashboard)
-        AddNav("Sales", 16, AddressOf ShowSales)
-        AddNav("Sales History", 16, AddressOf ShowSalesHistory)
-        AddNav("Menu Items", 16, AddressOf ShowMenu)
+        _dashboardButton = AddNav("Dashboard", 18, AddressOf ShowDashboard)
+        AddNav("Sales", 18, AddressOf ShowSales)
+        AddNav("Sales History", 18, AddressOf ShowSalesHistory)
+        AddNav("Menu Items", 18, AddressOf ShowMenu)
         AddSectionLabel("INVENTORY")
         AddNav("Stocks", 32, AddressOf ShowStocks)
         AddNav("Stock-In", 32, AddressOf ShowStockIn)
         AddNav("Low Stock", 32, AddressOf ShowLowStock)
-        AddNav("Expenses", 16, AddressOf ShowExpenses)
-        AddNav("Settings", 16, AddressOf ShowSettings)
+        AddNav("Expenses", 18, AddressOf ShowExpenses)
     End Sub
 
     Private Function AddNav(caption As String, leftPadding As Integer, onClick As EventHandler) As Button
         Dim button As Button = MakeNavButton(caption, leftPadding)
-        button.Margin = New Padding(0, 2, 0, 2)
-        button.Height = 42
+        button.Margin = New Padding(0, 1, 0, 1)
+        button.Height = 40
         AddHandler button.Click, onClick
         AddHandler button.Click, Sub() SelectNav(button)
         _navButtons.Add(button)
@@ -173,11 +177,11 @@ Public Class frmMain
         Dim label As New Label With {
             .Text = caption,
             .ForeColor = UiTheme.Accent,
-            .Font = New Font("Segoe UI", 8.5!, FontStyle.Bold),
-            .Height = 32,
+            .Font = New Font("Segoe UI", 8.0!, FontStyle.Bold),
+            .Height = 28,
             .TextAlign = ContentAlignment.BottomLeft,
-            .Margin = New Padding(8, 12, 0, 2),
-            .Padding = New Padding(8, 0, 0, 4)
+            .Margin = New Padding(0, 10, 0, 2),
+            .Padding = New Padding(18, 0, 0, 2)
         }
         _navFlow.Controls.Add(label)
     End Sub
@@ -190,6 +194,7 @@ Public Class frmMain
             .FlatStyle = FlatStyle.Flat,
             .ForeColor = Color.White,
             .BackColor = UiTheme.Sidebar,
+            .Font = New Font("Segoe UI", 10.0!),
             .Cursor = Cursors.Hand,
             .UseVisualStyleBackColor = False
         }
@@ -200,28 +205,36 @@ Public Class frmMain
     End Function
 
     Private Sub SizeNavItems()
-        Dim width As Integer = _navFlow.ClientSize.Width - _navFlow.Padding.Horizontal
+        Dim width As Integer = _navFlow.ClientSize.Width
         If width < 80 Then Return
         For Each item As Control In _navFlow.Controls
             item.Width = width
+        Next
+        Dim footerWidth As Integer = _footer.ClientSize.Width
+        If footerWidth < 80 Then Return
+        For Each item As Control In _footer.Controls
+            item.Width = footerWidth
         Next
     End Sub
 
     Private Sub LayoutHeader()
         If _titleLabel Is Nothing OrElse _titleLabel.Parent Is Nothing Then Return
         Dim header As Control = _titleLabel.Parent
-        _titleLabel.SetBounds(24, 18, header.Width - 280, 40)
-        _userLabel.SetBounds(header.Width - 260, 18, 236, 40)
+        _adminChip.SetBounds(header.Width - 168, 15, 148, 34)
+        _bell.SetBounds(header.Width - 208, 16, 32, 32)
+        _titleLabel.SetBounds(20, 12, Math.Max(120, header.Width - 240), 40)
     End Sub
 
     Private Sub SelectNav(selected As Button)
         For Each button As Button In _navButtons
             button.BackColor = UiTheme.Sidebar
             button.ForeColor = Color.White
+            button.Font = New Font("Segoe UI", 10.0!)
             button.FlatAppearance.MouseOverBackColor = UiTheme.SidebarHover
         Next
         selected.BackColor = UiTheme.SidebarSelected
-        selected.ForeColor = UiTheme.Accent
+        selected.ForeColor = Color.White
+        selected.Font = New Font("Segoe UI", 10.0!, FontStyle.Bold)
         selected.FlatAppearance.MouseOverBackColor = UiTheme.SidebarSelected
     End Sub
 

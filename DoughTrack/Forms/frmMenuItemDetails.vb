@@ -27,7 +27,7 @@ Public Class frmMenuItemDetails
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
         _preview = New PictureBox With {

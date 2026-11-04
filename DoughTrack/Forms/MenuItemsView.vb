@@ -25,7 +25,7 @@ Public Class MenuItemsView
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
 
@@ -36,27 +36,18 @@ Public Class MenuItemsView
             .FlowDirection = FlowDirection.LeftToRight,
             .Padding = New Padding(0, 0, 0, 8)
         }
-        _search = New TextBox With {.Width = 220}
+        _search = New TextBox With {.Width = 260}
         _category = New ComboBox With {
             .DropDownStyle = ComboBoxStyle.DropDownList,
             .Width = 180
         }
         Dim searchButton As Button = UiTheme.MakeButton("Search")
         Dim addButton As Button = UiTheme.MakeButton("Add Menu Item")
-        tools.Controls.Add(New Label With {
-            .Text = "Search",
-            .AutoSize = True,
-            .Padding = New Padding(0, 8, 6, 0)
-        })
         tools.Controls.Add(_search)
-        tools.Controls.Add(searchButton)
-        tools.Controls.Add(New Label With {
-            .Text = "Category",
-            .AutoSize = True,
-            .Padding = New Padding(12, 8, 6, 0)
-        })
         tools.Controls.Add(_category)
+        tools.Controls.Add(searchButton)
         tools.Controls.Add(addButton)
+        UiTheme.SetCue(_search, "Search menu items...")
 
         _message = New Label With {
             .Dock = DockStyle.Bottom,
@@ -100,6 +91,7 @@ Public Class MenuItemsView
                 _blank.Dispose()
             End Sub
 
+        UiTheme.StyleInputs(Me)
         LoadCategories()
         ReloadGrid()
     End Sub
@@ -135,7 +127,7 @@ Public Class MenuItemsView
         Dim selected As String = ""
         If _category.SelectedIndex > 0 Then selected = CStr(_category.SelectedItem)
         _category.Items.Clear()
-        _category.Items.Add("All categories")
+        _category.Items.Add("All Categories")
         Try
             For Each category As String In MenuItemRepository.GetCategories()
                 _category.Items.Add(category)
@@ -235,7 +227,7 @@ Public Class MenuItemsView
         Else
             question = "Reactivate " & item.MenuItemName & "?"
         End If
-        If MessageBox.Show(question, "DoughTrack", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+        If Not UiTheme.Confirm(FindForm(), question) Then
             Return
         End If
 

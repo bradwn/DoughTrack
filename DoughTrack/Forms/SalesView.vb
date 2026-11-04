@@ -42,6 +42,7 @@ Public Class SalesView
         AddHandler HandleCreated, Sub() split.SplitterDistance = Math.Max(360, split.Width * 3 \ 5)
         AddHandler Disposed, Sub() ClearThumbs()
 
+        UiTheme.StyleInputs(Me)
         LoadCategories()
         ReloadMenu()
         BindOrder()
@@ -50,7 +51,7 @@ Public Class SalesView
     Private Function BuildMenuPanel() As Control
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(12)
         }
         Dim tools As New FlowLayoutPanel With {
@@ -59,14 +60,13 @@ Public Class SalesView
             .WrapContents = False,
             .FlowDirection = FlowDirection.LeftToRight
         }
-        _search = New TextBox With {.Width = 180}
-        _category = New ComboBox With {.Width = 150, .DropDownStyle = ComboBoxStyle.DropDownList}
+        _search = New TextBox With {.Width = 260}
+        _category = New ComboBox With {.Width = 170, .DropDownStyle = ComboBoxStyle.DropDownList}
         Dim searchButton As Button = UiTheme.MakeButton("Search")
-        tools.Controls.Add(New Label With {.Text = "Search", .AutoSize = True, .Padding = New Padding(0, 8, 6, 0)})
         tools.Controls.Add(_search)
-        tools.Controls.Add(searchButton)
-        tools.Controls.Add(New Label With {.Text = "Category", .AutoSize = True, .Padding = New Padding(10, 8, 6, 0)})
         tools.Controls.Add(_category)
+        tools.Controls.Add(searchButton)
+        UiTheme.SetCue(_search, "Search menu items...")
 
         _menuMessage = New Label With {
             .Dock = DockStyle.Bottom,
@@ -81,7 +81,7 @@ Public Class SalesView
             .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .WrapContents = True,
             .FlowDirection = FlowDirection.LeftToRight,
-            .BackColor = Color.White
+            .BackColor = UiTheme.Card
         }
         scroller.Controls.Add(_menuHost)
         card.Controls.Add(tools)
@@ -107,15 +107,14 @@ Public Class SalesView
     Private Function BuildOrderPanel() As Control
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
-            .Padding = New Padding(12),
+            .BackColor = UiTheme.Card,
             .Margin = New Padding(8, 0, 0, 0)
         }
-        Dim title As New Label With {
-            .Dock = DockStyle.Top,
-            .Height = 32,
-            .Font = New Font("Segoe UI", 14.0!, FontStyle.Bold),
-            .Text = "Current Order"
+        Dim header As Panel = UiTheme.MakeSectionHeader("Current Order")
+        Dim body As New Panel With {
+            .Dock = DockStyle.Fill,
+            .BackColor = UiTheme.Card,
+            .Padding = New Padding(12, 8, 12, 8)
         }
         _orderGrid = New DataGridView With {.Dock = DockStyle.Fill}
         UiTheme.StyleGrid(_orderGrid)
@@ -149,8 +148,9 @@ Public Class SalesView
 
         _totalLabel = New Label With {
             .Dock = DockStyle.Bottom,
-            .Height = 36,
-            .Font = New Font("Segoe UI", 14.0!, FontStyle.Bold),
+            .Height = 40,
+            .Font = New Font("Segoe UI", 16.0!, FontStyle.Bold),
+            .ForeColor = UiTheme.TextDark,
             .TextAlign = ContentAlignment.MiddleRight,
             .Text = "Total  " & UiTheme.FormatMoney(0D)
         }
@@ -164,17 +164,25 @@ Public Class SalesView
             .Height = 46,
             .FlowDirection = FlowDirection.RightToLeft
         }
-        _completeButton = UiTheme.MakeButton("Complete Sale")
-        Dim clearButton As Button = UiTheme.MakeButton("Clear Order")
+        _completeButton = UiTheme.MakePrimaryButton("Complete Sale")
+        _completeButton.AutoSize = False
+        _completeButton.Width = 168
+        _completeButton.Height = 40
+        _completeButton.Font = New Font("Segoe UI", 10.5!, FontStyle.Bold)
+        Dim clearButton As Button = UiTheme.MakeSecondaryButton("Clear")
+        clearButton.AutoSize = False
+        clearButton.Width = 96
+        clearButton.Height = 40
         buttons.Controls.Add(_completeButton)
         buttons.Controls.Add(clearButton)
 
-        card.Controls.Add(title)
-        card.Controls.Add(buttons)
-        card.Controls.Add(_totalLabel)
-        card.Controls.Add(_orderMessage)
-        card.Controls.Add(_orderGrid)
-        card.Controls.SetChildIndex(_orderGrid, 0)
+        body.Controls.Add(buttons)
+        body.Controls.Add(_totalLabel)
+        body.Controls.Add(_orderMessage)
+        body.Controls.Add(_orderGrid)
+        body.Controls.SetChildIndex(_orderGrid, 0)
+        card.Controls.Add(body)
+        card.Controls.Add(header)
 
         AddHandler _orderGrid.CellContentClick, AddressOf OrderClick
         AddHandler clearButton.Click, AddressOf ClearOrder
@@ -186,7 +194,7 @@ Public Class SalesView
         _loadingFilters = True
         Dim selected As String = If(_category.SelectedIndex > 0, CStr(_category.SelectedItem), "")
         _category.Items.Clear()
-        _category.Items.Add("All categories")
+        _category.Items.Add("All Categories")
         Try
             For Each category As String In SaleRepository.GetActiveCategories()
                 _category.Items.Add(category)
@@ -231,7 +239,7 @@ Public Class SalesView
             .Width = 250,
             .Height = 168,
             .Margin = New Padding(0, 0, 8, 8),
-            .BackColor = UiTheme.Content,
+            .BackColor = Color.FromArgb(236, 236, 236),
             .Padding = New Padding(8)
         }
         Dim picture As New PictureBox With {
@@ -260,7 +268,7 @@ Public Class SalesView
         Dim stockLabel As New Label With {
             .Location = New Point(8, 80),
             .Size = New Size(230, 20),
-            .ForeColor = If(offer.IsAvailable, Color.FromArgb(30, 120, 60), UiTheme.Danger),
+            .ForeColor = If(offer.IsAvailable, UiTheme.Success, UiTheme.Danger),
             .Text = If(offer.IsAvailable, "Available  ·  " & offer.CanMake.ToString() & " can be made", "Unavailable")
         }
         Dim quantity As New NumericUpDown With {
@@ -283,6 +291,7 @@ Public Class SalesView
         card.Controls.Add(stockLabel)
         card.Controls.Add(quantity)
         card.Controls.Add(addButton)
+        UiTheme.StyleInputs(card)
         Return card
     End Function
 
@@ -341,7 +350,7 @@ Public Class SalesView
 
     Private Sub ClearOrder(sender As Object, e As EventArgs)
         If _saving OrElse _order.Count = 0 Then Return
-        If MessageBox.Show("Clear the current order?", "DoughTrack", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+        If Not UiTheme.Confirm(FindForm(), "Clear the current order?") Then
             Return
         End If
         _order.Clear()
@@ -368,7 +377,7 @@ Public Class SalesView
             BindOrder()
             LoadCategories()
             ReloadMenu()
-            _orderMessage.ForeColor = Color.FromArgb(30, 120, 60)
+            _orderMessage.ForeColor = UiTheme.Success
             _orderMessage.Text = "Sale " & result.SaleId.ToString() & " saved. Total " &
                 UiTheme.FormatMoney(result.TotalAmount) & ". COGS " & UiTheme.FormatMoney(result.CogsAmount) & "."
         Catch ex As Exception
@@ -425,7 +434,7 @@ Public Class SalesView
     Private Shared Function CreateBlank() As Image
         Dim bitmap As New Bitmap(64, 64)
         Using graphics As Graphics = Graphics.FromImage(bitmap)
-            graphics.Clear(Color.FromArgb(230, 232, 236))
+            graphics.Clear(UiTheme.InputFill)
         End Using
         Return bitmap
     End Function

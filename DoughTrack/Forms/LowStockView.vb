@@ -18,7 +18,7 @@ Public Class LowStockView
 
         Dim card As New Panel With {
             .Dock = DockStyle.Fill,
-            .BackColor = Color.White,
+            .BackColor = UiTheme.Card,
             .Padding = New Padding(16)
         }
 
@@ -43,6 +43,7 @@ Public Class LowStockView
         Controls.Add(card)
 
         AddHandler refreshButton.Click, Sub() LoadRows()
+        UiTheme.StyleInputs(Me)
         LoadRows()
     End Sub
 
@@ -54,13 +55,13 @@ Public Class LowStockView
 
             If rows.Rows.Count = 0 Then
                 _banner.Text = "All active items are above their reorder points."
-                _banner.ForeColor = Color.FromArgb(46, 125, 80)
-                _banner.BackColor = Color.FromArgb(226, 244, 233)
+                _banner.ForeColor = UiTheme.Success
+                _banner.BackColor = UiTheme.SuccessWash
             Else
                 _banner.Text = rows.Rows.Count.ToString() &
                     If(rows.Rows.Count = 1, " item needs", " items need") & " attention (low or out of stock)."
                 _banner.ForeColor = UiTheme.Danger
-                _banner.BackColor = Color.FromArgb(252, 228, 224)
+                _banner.BackColor = UiTheme.DangerWash
             End If
 
             For Each gridRow As DataGridViewRow In _grid.Rows
