@@ -1,4 +1,4 @@
-﻿Imports DoughTrack.Data
+Imports DoughTrack.Data
 Imports DoughTrack.Helpers
 
 Public Class frmLogin
@@ -15,7 +15,42 @@ Public Class frmLogin
         lblLogoFallback.Visible = False
     End Sub
 
+    ' Runs once, right after the login window appears.
+    Private Sub frmLogin_Shown(sender As Object, e As EventArgs) Handles Me.Shown
+        CheckFirstRun()
+    End Sub
+
+    ''' <summary>
+    ''' If the users table is empty (new installation), ask the installer to create the Admin account.
+    ''' If it already has users, nothing happens.
+    ''' </summary>
+    Private Sub CheckFirstRun()
+        Try
+            If UserRepository.CountUsers() > 0 Then Return
+        Catch ex As Exception
+            lblMessage.ForeColor = Color.Firebrick
+            lblMessage.Text = "Unable to reach the database. Check that MySQL is running and appsettings.json is correct."
+            Debug.WriteLine("FIRST-RUN CHECK ERROR: " & ex.ToString())
+            Return
+        End Try
+
+        btnLogin.Enabled = False
+        Using setup As New frmFirstRunSetup()
+            If setup.ShowDialog(Me) = DialogResult.OK Then
+                btnLogin.Enabled = True
+                txtUsername.Text = setup.CreatedUsername
+                lblMessage.ForeColor = Color.SeaGreen
+                lblMessage.Text = "Admin account created. Please log in."
+                txtPassword.Focus()
+            Else
+                lblMessage.ForeColor = Color.Firebrick
+                lblMessage.Text = "No Admin account exists yet. Close DoughTrack and open it again to create one."
+            End If
+        End Using
+    End Sub
+
     Private Sub btnLogin_Click(sender As Object, e As EventArgs) Handles btnLogin.Click
+        lblMessage.ForeColor = Color.Firebrick
         lblMessage.Text = ""
 
         Dim username As String = txtUsername.Text.Trim()

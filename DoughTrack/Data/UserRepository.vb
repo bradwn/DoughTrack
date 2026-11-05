@@ -1,4 +1,4 @@
-﻿Imports MySql.Data.MySqlClient
+Imports MySql.Data.MySqlClient
 Imports DoughTrack.Models
 
 Namespace Data
@@ -54,6 +54,41 @@ Namespace Data
                 End Using
             End Using
         End Sub
+
+        ''' <summary>
+        ''' How many user accounts exist. Zero means this is a brand-new installation.
+        ''' </summary>
+        Public Function CountUsers() As Integer
+            Using conn As MySqlConnection = DatabaseHelper.CreateConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT COUNT(*) FROM users", conn)
+                    Return Convert.ToInt32(cmd.ExecuteScalar())
+                End Using
+            End Using
+        End Function
+
+        ''' <summary>
+        ''' Creates the very first Admin account, but ONLY if the users table is still empty.
+        ''' The check and the insert are one SQL statement, so this cannot be used to add
+        ''' a second account. Returns True if the account was created, False if a user
+        ''' already existed. The password must already be hashed.
+        ''' </summary>
+        Public Function CreateFirstAdmin(username As String, passwordHash As String, fullName As String) As Boolean
+            Const sql As String =
+                "INSERT INTO users (username, password_hash, full_name) " &
+                "SELECT @username, @passwordHash, @fullName FROM DUAL " &
+                "WHERE NOT EXISTS (SELECT 1 FROM users)"
+
+            Using conn As MySqlConnection = DatabaseHelper.CreateConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@username", username)
+                    cmd.Parameters.AddWithValue("@passwordHash", passwordHash)
+                    cmd.Parameters.AddWithValue("@fullName", fullName)
+                    Return cmd.ExecuteNonQuery() = 1
+                End Using
+            End Using
+        End Function
 
         ''' <summary>
         ''' Saves a new password hash for one user. The password must already be hashed.
